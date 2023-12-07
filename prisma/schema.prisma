@@ -1,0 +1,28 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model file {
+  uuid          String    @id
+  name          String
+  hashSum       String?
+  uploadIP      String?
+  uploadDate    DateTime? @db.Timestamptz(3)  @default(dbgenerated("NOW()")) 
+  isBlacklisted Boolean    @default(false)
+}
+
+model user {
+  login         String    @id
+  password      String 
+}
+
+model blacklist {
+  hashSum       String    @id
+  blacklistedOn DateTime? @db.Timestamptz(3)  @default(dbgenerated("NOW()")) 
+  description   String?    
+}
