@@ -8,21 +8,18 @@ datasource db {
 }
 
 model file {
-  uuid          String    @id
-  name          String
-  hashSum       String?
-  uploadIP      String?
-  uploadDate    DateTime? @db.Timestamptz(3)  @default(dbgenerated("NOW()")) 
-  isBlacklisted Boolean    @default(false)
+  name            String
+  uploadDate      DateTime? @db.Timestamptz(3)  @default(dbgenerated("NOW()")) 
+
+  uuid            String    @id
+  hashSum         String?
+
+  parentFolderId  String 
+  ownerId
 }
 
 model user {
+  id
   login         String    @id
   password      String 
-}
-
-model blacklist {
-  hashSum       String    @id
-  blacklistedOn DateTime? @db.Timestamptz(3)  @default(dbgenerated("NOW()")) 
-  description   String?    
 }
