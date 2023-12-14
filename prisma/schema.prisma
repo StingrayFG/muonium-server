@@ -8,18 +8,36 @@ datasource db {
 }
 
 model file {
-  name            String
-  uploadDate      DateTime? @db.Timestamptz(3)  @default(dbgenerated("NOW()")) 
+  name              String
+  creationDate      DateTime? @db.Timestamptz(3)  @default(dbgenerated("NOW()")) 
 
-  uuid            String    @id
-  hashSum         String?
-
-  parentFolderId  String 
-  ownerId
+  uuid              String    @id
+  ownerUuid         String 
+  parentUuid        String 
+  driveUuid         String
 }
 
+model folder {
+  name              String
+  creationDate      DateTime? @db.Timestamptz(3)  @default(dbgenerated("NOW()")) 
+
+  uuid              String    @id
+  ownerUuid         String 
+  parentUuid        String 
+  driveUuid         String
+}
+
+model drive {
+  uuid              String    @id
+  ownerUuid         String
+
+  spaceTotal        Int
+  spaceUsed         Int
+}
+
+
 model user {
-  id
-  login         String    @id
-  password      String 
+  uuid              String    
+  login             String    @id
+  password          String 
 }
