@@ -26,12 +26,13 @@ router.post('/auth/login', async function(req, res, next) {
 });
 
 router.post('/auth/signup', async function(req, res, next) {
-  var exists = false;
-  var user;
+  let exists = false;
+  let user;
 
   try {
     user = await prisma.user.create({
       data: {
+        uuid: Buffer.from(crypto.randomUUID(), 'hex'),
         login: req.body.userData.login,
         password: req.body.userData.password
       },
@@ -40,9 +41,9 @@ router.post('/auth/signup', async function(req, res, next) {
   }
 
   if (user) {
-    res.sendStatus(200);
+    res.sendStatus(201);
   } else if (exists) {
-    res.sendStatus(400);
+    res.sendStatus(409);
   }
 });
 
