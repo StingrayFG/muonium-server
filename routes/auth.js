@@ -26,25 +26,33 @@ router.post('/auth/login', async function(req, res, next) {
 });
 
 router.post('/auth/signup', async function(req, res, next) {
-  let exists = false;
-  let user;
-
   try {
-    user = await prisma.user.create({
-      data: {
-        uuid: Buffer.from(crypto.randomUUID(), 'hex'),
-        login: req.body.userData.login,
-        password: req.body.userData.password
-      },
-  })} catch (e) {
-    exists = true;
-  }
-
-  if (user) {
-    res.sendStatus(201);
-  } else if (exists) {
+    let userUuid = Buffer.from(crypto.randomUUID(), 'hex');
+    await Promise.all([
+      await prisma.user.create({
+        data: {
+          uuid: userUuid,
+          login: req.body.userData.login,
+          password: req.body.userData.password
+        },
+      }),
+      await prisma.drive.create({
+        data: {
+          uuid: Buffer.from(crypto.randomUUID(), 'hex'),
+          ownerUuid: userUuid,
+          spaceTotal: 1024 * 1024 * 100,
+          spaceUsed: 0,
+        },
+      })
+      .then(
+        res.sendStatus(201),
+      )
+    ])
+  } catch (e) {
     res.sendStatus(409);
   }
+
+
 });
 
 module.exports = router;
