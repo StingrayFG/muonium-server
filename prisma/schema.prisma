@@ -13,8 +13,10 @@ model file {
 
   uuid              String    @id
   ownerUuid         String 
-  parentUuid        String 
+  parentUuid        String? 
   driveUuid         String
+
+  removed          Boolean    @default(false)
 }
 
 model folder {
@@ -23,8 +25,10 @@ model folder {
 
   uuid              String    @id
   ownerUuid         String 
-  parentUuid        String 
+  parentUuid        String? 
   driveUuid         String
+
+  removed           Boolean    @default(false)
 }
 
 model drive {
