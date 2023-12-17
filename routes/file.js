@@ -108,4 +108,60 @@ router.post('/file/upload', authenticateJWT, checkUUIDs, checkDriveSpace, upload
   }
 });
 
+
+router.put('/file/rename', authenticateJWT, checkUUIDs, async function(req, res, next) {
+  try {
+    prisma.file.update({
+      where: {
+        uuid: req.body.fileUuid,
+      },
+      data: {
+        name: req.body.fileName,
+      },
+    })
+    .then(
+      res.sendStatus(200),
+    )
+  } catch (e) {
+    res.sendStatus(404);
+  }
+});
+
+
+router.put('/file/remove', authenticateJWT, checkUUIDs, async function(req, res, next) {
+  try {
+    prisma.drive.update({
+      where: {
+        uuid: req.body.fileUuid,
+      },
+      data: {
+        removed: true,
+      },
+    })
+    .then(
+      res.sendStatus(200),
+    )
+  } catch (e) {
+    res.sendStatus(404);
+  }
+});
+
+router.delete('/file/delete', authenticateJWT, checkUUIDs, async function(req, res, next) {
+  try {
+    prisma.drive.update({
+      where: {
+        uuid: req.body.fileUuid,
+      },
+      data: {
+        removed: true,
+      },
+    })
+    .then(
+      res.sendStatus(200),
+    )
+  } catch (e) {
+    res.sendStatus(404);
+  }
+});
+  
   
