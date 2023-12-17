@@ -80,17 +80,16 @@ const checkDriveSpace = async (req, res, next) => {
 router.post('/file/upload', authenticateJWT, checkUUIDs, checkDriveSpace, upload.single('file'), async function(req, res, next) {
   try {
     let fileUuid = Buffer.from(crypto.randomUUID(), 'hex');
-    await Promise.all([
-      prisma.file.create({
-        data: {
-          name: req.file.filename,
-          uuid: fileUuid,
-          ownerUuid: req.user.uuid,
-          parentUuid: req.body.parentUuid,
-          driveUuid: req.body.driveUuid,
-        }
-      }),
-
+    prisma.file.create({
+      data: {
+        name: req.file.filename,
+        uuid: fileUuid,
+        ownerUuid: req.user.uuid,
+        parentUuid: req.body.parentUuid,
+        driveUuid: req.body.driveUuid,
+      }
+    })
+    .then(
       prisma.drive.update({
         where: {
           uuid: req.body.driveUuid,
@@ -99,10 +98,10 @@ router.post('/file/upload', authenticateJWT, checkUUIDs, checkDriveSpace, upload
           spaceUsed: { increment: req.file.size },
         },
       })
-    ])
-    .then(
-      res.sendStatus(201),
-    )
+      .then(
+        res.sendStatus(201),
+      )
+    )  
   } catch (e) {
     res.sendStatus(409);
   }
@@ -148,17 +147,24 @@ router.put('/file/remove', authenticateJWT, checkUUIDs, async function(req, res,
 
 router.delete('/file/delete', authenticateJWT, checkUUIDs, async function(req, res, next) {
   try {
-    prisma.drive.update({
+    prisma.file.delete({
       where: {
         uuid: req.body.fileUuid,
       },
-      data: {
-        removed: true,
-      },
     })
     .then(
-      res.sendStatus(200),
-    )
+      prisma.drive.update({
+        where: {
+          uuid: req.body.driveUuid,
+        },
+        data: {
+          spaceUsed: { decrement: req.file.size },
+        },
+      })
+      .then(
+        res.sendStatus(200),
+      )
+    )  
   } catch (e) {
     res.sendStatus(404);
   }
