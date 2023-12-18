@@ -147,6 +147,37 @@ router.put('/file/rename', authenticateJWT, checkUUIDs, async function(req, res,
   }
 });
 
+router.put('/file/copy', authenticateJWT, checkUUIDs, async function(req, res, next) {
+  try {
+    const file = await prisma.file.findUnique({
+      where: {
+        uuid: req.params.uuid,
+      }
+    })
+    file.uuid = Buffer.from(crypto.randomUUID(), 'hex')
+    .then(
+      await prisma.file.create({
+        data: file,
+      })
+      .then(
+        await prisma.drive.update({
+          where: {
+            uuid: req.body.driveUuid,
+          },
+          data: {
+            spaceUsed: { increment: file.size },
+          },
+        })
+        .then(
+          res.sendStatus(201),
+        )
+      )  
+    )   
+  } catch (e) {
+    res.sendStatus(409);
+  }
+});
+
 router.put('/file/move', authenticateJWT, checkUUIDs, async function(req, res, next) {
   try {
     await prisma.file.update({
