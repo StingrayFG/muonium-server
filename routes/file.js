@@ -9,6 +9,7 @@ var router = express.Router();
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 
+// Middleware
 var multer = require('multer');
 var storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -77,10 +78,11 @@ const checkDriveSpace = async (req, res, next) => {
   }
 };
 
+// Endpoints
 router.post('/file/upload', authenticateJWT, checkUUIDs, checkDriveSpace, upload.single('file'), async function(req, res, next) {
   try {
-    let fileUuid = Buffer.from(crypto.randomUUID(), 'hex');
-    prisma.file.create({
+    const fileUuid = Buffer.from(crypto.randomUUID(), 'hex');
+    await prisma.file.create({
       data: {
         name: req.file.filename,
         uuid: fileUuid,
@@ -107,10 +109,29 @@ router.post('/file/upload', authenticateJWT, checkUUIDs, checkDriveSpace, upload
   }
 });
 
+router.get('/file/download/:uuid', async function(req, res, next) {
+  try {
+    const file = await prisma.file.findUnique({
+      where: {
+        uuid: req.params.uuid,
+      }
+    })
+    .then(() => {
+      if (file) {
+        res.set('Content-Disposition', `attachment; filename="${path.parse(file.name).name}"`);
+        res.sendFile(file.name, { root: 'uploads/'});
+      } else {
+        res.status(404);
+      }
+    })
+  } catch (e) {
+    res.sendStatus(404);
+  }
+});
 
 router.put('/file/rename', authenticateJWT, checkUUIDs, async function(req, res, next) {
   try {
-    prisma.file.update({
+    await prisma.file.update({
       where: {
         uuid: req.body.fileUuid,
       },
@@ -126,10 +147,27 @@ router.put('/file/rename', authenticateJWT, checkUUIDs, async function(req, res,
   }
 });
 
+router.put('/file/move', authenticateJWT, checkUUIDs, async function(req, res, next) {
+  try {
+    await prisma.file.update({
+      where: {
+        uuid: req.body.fileUuid,
+      },
+      data: {
+        name: req.body.parentFolder,
+      },
+    })
+    .then(
+      res.sendStatus(200),
+    )
+  } catch (e) {
+    res.sendStatus(404);
+  }
+});
 
 router.put('/file/remove', authenticateJWT, checkUUIDs, async function(req, res, next) {
   try {
-    prisma.drive.update({
+    await prisma.drive.update({
       where: {
         uuid: req.body.fileUuid,
       },
@@ -147,7 +185,7 @@ router.put('/file/remove', authenticateJWT, checkUUIDs, async function(req, res,
 
 router.delete('/file/delete', authenticateJWT, checkUUIDs, async function(req, res, next) {
   try {
-    prisma.file.delete({
+    await prisma.file.delete({
       where: {
         uuid: req.body.fileUuid,
       },
