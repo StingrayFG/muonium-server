@@ -10,6 +10,7 @@ datasource db {
 model file {
   name              String
   creationDate      DateTime? @db.Timestamptz(3)  @default(dbgenerated("NOW()")) 
+  size              Int
 
   uuid              String    @id
   ownerUuid         String 

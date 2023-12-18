@@ -81,18 +81,18 @@ const checkDriveSpace = async (req, res, next) => {
 // Endpoints
 router.post('/file/upload', authenticateJWT, checkUUIDs, checkDriveSpace, upload.single('file'), async function(req, res, next) {
   try {
-    const fileUuid = Buffer.from(crypto.randomUUID(), 'hex');
     await prisma.file.create({
       data: {
         name: req.file.filename,
-        uuid: fileUuid,
+        uuid: Buffer.from(crypto.randomUUID(), 'hex'),
+        size: req.file.size,
         ownerUuid: req.user.uuid,
         parentUuid: req.body.parentUuid,
         driveUuid: req.body.driveUuid,
       }
     })
     .then(
-      prisma.drive.update({
+      await prisma.drive.update({
         where: {
           uuid: req.body.driveUuid,
         },
@@ -191,7 +191,7 @@ router.delete('/file/delete', authenticateJWT, checkUUIDs, async function(req, r
       },
     })
     .then(
-      prisma.drive.update({
+      await prisma.drive.update({
         where: {
           uuid: req.body.driveUuid,
         },
