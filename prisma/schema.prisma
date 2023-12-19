@@ -16,8 +16,6 @@ model file {
   ownerUuid         String 
   parentUuid        String? 
   driveUuid         String
-
-  removed          Boolean    @default(false)
 }
 
 model folder {
@@ -28,8 +26,6 @@ model folder {
   ownerUuid         String 
   parentUuid        String? 
   driveUuid         String
-
-  removed           Boolean    @default(false)
 }
 
 model drive {
