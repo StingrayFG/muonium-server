@@ -162,7 +162,7 @@ router.put('/file/rename', authenticateJWT, checkDrive, checkParentFolder, check
         uuid: req.body.file.uuid,
       },
       data: {
-        name: req.body.fileName,
+        name: req.body.fileNewName,
       },
     })
     .then(
@@ -204,7 +204,7 @@ router.put('/file/move', authenticateJWT, checkDrive, checkParentFolder, checkFi
         uuid: req.body.file.uuid,
       },
       data: {
-        name: req.body.parentFolder,
+        parentUuid: req.body.newParentUuid,
       },
     })
     .then(
@@ -233,7 +233,7 @@ router.put('/file/remove', authenticateJWT, checkDrive, checkParentFolder, check
   }
 });
 
-router.delete('/file/delete', authenticateJWT, checkDrive, checkFile, async function(req, res, next) {
+router.delete('/file/delete', authenticateJWT, checkDrive, checkParentFolder, checkFile, async function(req, res, next) {
   try {
     await prisma.file.delete({
       where: {
