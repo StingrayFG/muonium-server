@@ -41,7 +41,7 @@ const checkDrive = async (req, res, next) => {
   try {
     const drive = await prisma.drive.findUnique({
       where: {
-        uuid: req.body.driveUuid
+        uuid: req.body.driveUuid,
       }
     })
     .then(() => {
@@ -62,7 +62,7 @@ const checkParentFolder = async (req, res, next) => {
     } else if (req.body.parentUuid) {
       const folder = await prisma.folder.findUnique({
         where: {
-          uuid: req.body.parentUuid
+          uuid: req.body.parentUuid,
         }
       })
       .then(() => {
@@ -162,27 +162,56 @@ router.put('/folder/move', authenticateJWT, checkDrive, checkParentFolder, check
 
 router.delete('/folder/delete', authenticateJWT, checkDrive, checkParentFolder, checkFolder, async function(req, res, next) {
   try {
-    await prisma.file.delete({
+    await prisma.folder.delete({
       where: {
-        uuid: req.body.fileUuid,
+        uuid: req.body.folderUuid,
       },
     })
-    .then(
-      await prisma.drive.update({
-        where: {
-          uuid: req.body.driveUuid,
-        },
-        data: {
-          spaceUsed: { decrement: req.file.size },
-        },
-      })
-      .then(
-        res.sendStatus(200),
-      )
-    )  
+    .then(async () => {
+      deleteChildren();
+      res.sendStatus(200);
+      
+    })
   } catch (e) {
     res.sendStatus(404);
   }
+
+  deleteChildren = async () => {
+    let deletedParentUuids = [req.body.folderUuid];
+    let nextDeletedParentUuids = [];
+
+    while (deletedParentUuids.length > 0) {
+      Promise.all([
+        async () => {
+            let foldersToDelete = await prisma.folder.findMany({
+            where: {
+              parentUuid: deletedParentUuids,
+            },
+          })
+          .then(() => {
+            foldersToDelete.forEach(element => {
+              nextDeletedParentUuids.push(element.uuid)
+            });
+            deletedParentUuids = nextDeletedParentUuids;
+          })
+        },
+  
+        await prisma.folder.deleteMany({
+          where: {
+            parentUuid: deletedParentUuids,
+          },
+        }),
+  
+        await prisma.folder.deleteMany({
+          where: {
+            parentUuid: deletedParentUuids,
+          },
+        })
+
+      ])   
+    };
+  };
+
 });
   
 module.exports = router;
