@@ -41,7 +41,7 @@ const checkDrive = async (req, res, next) => {
   try {
     const drive = await prisma.drive.findUnique({
       where: {
-        uuid: req.body.driveUuid
+        uuid: req.body.driveUuid,
       }
     })
     .then(() => {
@@ -70,7 +70,7 @@ const checkParentFolder = async (req, res, next) => {
     } else if (req.body.parentUuid) {
       const folder = await prisma.folder.findUnique({
         where: {
-          uuid: req.body.parentUuid
+          uuid: req.body.parentUuid,
         }
       })
       .then(() => {
