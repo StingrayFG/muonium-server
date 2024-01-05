@@ -7,3 +7,5 @@
 /uploads
 prisma/.env
 .env
+*.toml
+*.sql
