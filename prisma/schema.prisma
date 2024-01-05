@@ -7,6 +7,22 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+
+model user {
+  uuid              String    
+  login             String    @id
+  password          String 
+}
+
+model drive {
+  uuid              String    @id
+  ownerUuid         String
+
+  spaceTotal        Int
+  spaceUsed         Int
+}
+
+
 model file {
   name              String
   creationDate      DateTime? @db.Timestamptz(3)  @default(dbgenerated("NOW()")) 
@@ -26,19 +42,4 @@ model folder {
   ownerUuid         String 
   parentUuid        String? 
   driveUuid         String
-}
-
-model drive {
-  uuid              String    @id
-  ownerUuid         String
-
-  spaceTotal        Int
-  spaceUsed         Int
-}
-
-
-model user {
-  uuid              String    
-  login             String    @id
-  password          String 
 }
