@@ -1,4 +1,5 @@
 var jwt = require('jsonwebtoken');
+var crypto = require('crypto');
 
 var express = require('express');
 var router = express.Router();
@@ -27,7 +28,8 @@ router.post('/auth/login', async function(req, res, next) {
 
 router.post('/auth/signup', async function(req, res, next) {
   try {
-    let userUuid = Buffer.from(crypto.randomUUID(), 'hex');
+    let userUuid = crypto.randomUUID();
+    console.log(userUuid)
     await Promise.all([
       await prisma.user.create({
         data: {
@@ -38,21 +40,19 @@ router.post('/auth/signup', async function(req, res, next) {
       }),
       await prisma.drive.create({
         data: {
-          uuid: Buffer.from(crypto.randomUUID(), 'hex'),
+          uuid: crypto.randomUUID(),
           ownerUuid: userUuid,
           spaceTotal: 1024 * 1024 * 100,
           spaceUsed: 0,
         },
       })
-      .then(
-        res.sendStatus(201),
-      )
     ])
+    .then(
+      res.sendStatus(201),
+    )
   } catch (e) {
     res.sendStatus(409);
   }
-
-
 });
 
 module.exports = router;
