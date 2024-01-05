@@ -8,51 +8,70 @@ const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 
 router.post('/auth/login', async function(req, res, next) {
-  console.log(req.body);
+  let user;
+  let drive;
 
-  const user = await prisma.user.findUnique({
-    where: {
-      login: req.body.userData.login,
-      password: req.body.userData.password
-    }
-  })
-
-  res.setHeader('Content-Type', 'application/json');
-  if (user) {
-    const accessToken = jwt.sign({ username: user.login }, process.env.ACCESS_TOKEN_SECRET);
-    res.send({exists: true, accessToken});
-  } else {
-    res.send({exists: false });
+  const getUser = async () => {
+    result = await prisma.user.findUnique({
+      where: {
+        login: req.body.userData.login,
+        password: req.body.userData.password,
+      }
+    })
+    user = result;
+    return result;
   }
+  const getDrive = async (u) => {
+    if (u) {
+      result = await prisma.drive.findUnique({
+        where: {
+          ownerUuid: u.uuid,
+        }
+      })
+      drive = result;
+      return result;
+    } else {
+      return null;
+    }
+  }
+  
+  await getUser()
+  .then(async result => (await getDrive(result)))
+  .then(() => {
+    if (user && drive) {
+      const accessToken = jwt.sign({ login: user.login }, process.env.ACCESS_TOKEN_SECRET);
+      res.send({accessToken, userUuid: user.uuid, driveUuid: drive.uuid});
+    } else {
+      res.sendStatus(404);
+    }  
+  })
 });
 
 router.post('/auth/signup', async function(req, res, next) {
-  try {
-    let userUuid = crypto.randomUUID();
-    console.log(userUuid)
-    await Promise.all([
-      await prisma.user.create({
-        data: {
-          uuid: userUuid,
-          login: req.body.userData.login,
-          password: req.body.userData.password
-        },
-      }),
-      await prisma.drive.create({
-        data: {
-          uuid: crypto.randomUUID(),
-          ownerUuid: userUuid,
-          spaceTotal: 1024 * 1024 * 100,
-          spaceUsed: 0,
-        },
-      })
-    ])
-    .then(
-      res.sendStatus(201),
-    )
-  } catch (e) {
-    res.sendStatus(409);
-  }
+  let userUuid = crypto.randomUUID();
+  Promise.all([
+    await prisma.user.create({
+      data: {
+        uuid: userUuid,
+        login: req.body.userData.login,
+        password: req.body.userData.password
+      },
+    }),
+    await prisma.drive.create({
+      data: {
+        uuid: crypto.randomUUID(),
+        ownerUuid: userUuid,
+        spaceTotal: 1024 * 1024 * 100,
+        spaceUsed: 0,
+      },
+    })
+  ])
+  .then(
+    res.sendStatus(201)
+  )
+  .catch(
+    res.sendStatus(409)
+  )  
 });
 
 module.exports = router;
