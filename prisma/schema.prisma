@@ -16,7 +16,7 @@ model user {
 
 model drive {
   uuid              String    @id
-  ownerUuid         String
+  ownerUuid         String    
 
   spaceTotal        Int
   spaceUsed         Int

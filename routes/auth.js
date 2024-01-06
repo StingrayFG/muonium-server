@@ -23,7 +23,7 @@ router.post('/auth/login', async function(req, res, next) {
   }
   const getDrive = async (u) => {
     if (u) {
-      result = await prisma.drive.findUnique({
+      result = await prisma.drive.findFirst({
         where: {
           ownerUuid: u.uuid,
         }
@@ -45,6 +45,9 @@ router.post('/auth/login', async function(req, res, next) {
       res.sendStatus(404);
     }  
   })
+  .catch(
+    res.sendStatus(409)
+  )  
 });
 
 router.post('/auth/signup', async function(req, res, next) {
@@ -54,7 +57,7 @@ router.post('/auth/signup', async function(req, res, next) {
       data: {
         uuid: userUuid,
         login: req.body.userData.login,
-        password: req.body.userData.password
+        password: req.body.userData.password,
       },
     }),
     await prisma.drive.create({
