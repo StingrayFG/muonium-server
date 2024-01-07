@@ -68,7 +68,7 @@ const checkDriveSpace = async (req, res, next) => {
 
 const checkParentFolder = async (req, res, next) => {
   console.log('checkParentFolder');
-  if ((req.body.parentUuid === 'root') || (req.body.parentUuid === 'trash')) {
+  if (req.body.parentUuid === 'root') {
     next();
   } else if (req.body.parentUuid) {
     await prisma.folder.findUnique({
@@ -96,7 +96,7 @@ const checkFile = async (req, res, next) => {
   })
   .then(result => {
     if (result) {
-      req.body.file = result;
+      req.file = result;
       next();
     }
   })
@@ -130,18 +130,18 @@ checkDrive, checkDriveSpace, checkParentFolder, upload.single('file'), async fun
     .then(() => {
       return res.sendStatus(201)
     })
-    .catch((e) => {
+    .catch(() => {
       return res.sendStatus(404);
     })
   ) 
-  .catch((e) => {
+  .catch(() => {
     return res.sendStatus(404);
   }) 
 });
 
 router.post('/file/download', authenticateJWT, checkDrive, checkFile, async function(req, res, next) {
   const downloadToken = jwt.sign({ uuid: req.body.fileUuid }, process.env.ACCESS_TOKEN_SECRET);
-  res.send({ downloadToken });
+  return res.send({ downloadToken });
 });
 
 router.get('/file/download/:uuid/:token', async function(req, res, next) {
@@ -161,9 +161,9 @@ router.get('/file/download/:uuid/:token', async function(req, res, next) {
         console.log(result)
         if (result) {
           res.set('Content-Disposition', `attachment; filename="${path.parse(result.name).name}"`);
-          res.sendFile(result.name, { root: 'uploads/'});
+          return res.sendFile(result.name, { root: 'uploads/'});
         } else {
-          res.status(404);
+          return res.status(404);
         }
       })
       .catch(() => {
@@ -173,107 +173,150 @@ router.get('/file/download/:uuid/:token', async function(req, res, next) {
   });
 });
 
-router.put('/file/rename', authenticateJWT, checkDrive, checkParentFolder, checkFile, async function(req, res, next) {
-  try {
-    await prisma.file.update({
-      where: {
-        uuid: req.body.file.uuid,
-      },
-      data: {
-        name: req.body.fileNewName,
-      },
-    })
-    .then(
-      res.sendStatus(200)
-    )
-  } catch (e) {
-    res.sendStatus(404);
-  }
-});
+router.put('/file/rename', authenticateJWT, checkDrive, checkFile, async function(req, res, next) {
+  modificationDate = Date.now();
 
-router.put('/file/copy', authenticateJWT, checkDrive, checkParentFolder, checkFile, async function(req, res, next) {
-  try {
-    req.body.file.uuid = Buffer.from(crypto.randomUUID(), 'hex');
-    await prisma.file.create({
-      data: req.body.file,
-    })
-    .then(
-      await prisma.drive.update({
+  fs.rename('uploads/' + req.file.name, 'uploads/' +  req.body.fileName + '.' + modificationDate, async (err) => {
+    if (err) {
+      return res.sendStatus(404);
+    } else {
+      await prisma.file.update({
         where: {
-          uuid: req.body.driveUuid,
+          uuid: req.file.uuid,
         },
         data: {
-          spaceUsed: { increment: file.size },
+          name: req.body.fileName + '.' + modificationDate,
+          modificationDate: new Date(modificationDate),
         },
       })
-      .then(
-        res.sendStatus(201)
-      )
-    )    
-  } catch (e) {
-    res.sendStatus(404);
-  }
-});
-
-router.put('/file/move', authenticateJWT, checkDrive, checkParentFolder, checkFile, async function(req, res, next) {
-  try {
-    await prisma.file.update({
-      where: {
-        uuid: req.body.file.uuid,
-      },
-      data: {
-        parentUuid: req.body.newParentUuid,
-      },
-    })
-    .then(
-      res.sendStatus(200)
-    )
-  } catch (e) {
-    res.sendStatus(404);
-  }
-});
-
-router.put('/file/remove', authenticateJWT, checkDrive, checkParentFolder, checkFile, async function(req, res, next) {
-  try {
-    await prisma.file.update({
-      where: {
-        uuid: req.body.file.uuid,
-      },
-      data: {
-        parentUuid: '/trash'
-      },
-    })
-    .then(
-      res.sendStatus(200)
-    )
-  } catch (e) {
-    res.sendStatus(404);
-  }
-});
-
-router.delete('/file/delete', authenticateJWT, checkDrive, checkParentFolder, checkFile, async function(req, res, next) {
-  try {
-    await prisma.file.delete({
-      where: {
-        uuid: req.body.file.uuid,
-      },
-    })
-    .then(
-      await prisma.drive.update({
-        where: {
-          uuid: req.body.driveUuid,
-        },
-        data: {
-          spaceUsed: { decrement: req.file.size },
-        },
+      .then(() => {
+        return res.sendStatus(200);
       })
-      .then(
-        res.sendStatus(200)
-      )
-    )  
-  } catch (e) {
-    res.sendStatus(404);
-  }
+      .catch(() => {
+        return res.sendStatus(404);
+      })
+    }
+  })
+});
+
+router.put('/file/copy', authenticateJWT, checkDrive, checkFile, async function(req, res, next) {
+  const originalFullName = req.file.name;
+  let copiedFile = req.file;
+  copiedFile.uuid = crypto.randomUUID();
+
+  const originalName = path.parse(copiedFile.name).name; 
+  const originalExtension = path.extname(originalName);
+  copiedFile.name = path.parse(originalName).name + ' - copy' + originalExtension + '.' + Date.now()
+
+  console.log(originalFullName)
+  console.log(copiedFile.name);
+
+  fs.copyFile('uploads/' + originalFullName, 'uploads/' + copiedFile.name, async (err) => {
+    if (err) {
+      return res.sendStatus(404);
+    } else {
+      await prisma.file.create({
+        data: copiedFile,
+      })
+      .then(async () => {
+        await prisma.drive.update({
+          where: {
+            uuid: req.body.driveUuid,
+          },
+          data: {
+            spaceUsed: { increment: req.file.size },
+          },
+        })
+        .then(() => {
+          return res.sendStatus(201);
+        })
+        .catch(() => {
+          return res.sendStatus(404);
+        })
+      })  
+      .catch(() => {
+        return res.sendStatus(404);
+      })  
+    }
+  });
+});
+
+router.put('/file/move', authenticateJWT, checkDrive, checkFile, async function(req, res, next) {
+  await prisma.file.update({
+    where: {
+      uuid: req.file.uuid,
+    },
+    data: {
+      parentUuid: req.body.parentUuid,
+    },
+  })
+  .then(() => {
+    return res.sendStatus(200)
+  })
+  .catch(() => {
+    return res.sendStatus(404);
+  })
+});
+
+router.put('/file/remove', authenticateJWT, checkDrive, checkFile, async function(req, res, next) {
+  await prisma.file.update({
+    where: {
+      uuid: req.file.uuid,
+    },
+    data: {
+      isRemoved: true,
+    },
+  })
+  .then(() => {
+    return res.sendStatus(200)
+  })
+  .catch(() => {
+    return res.sendStatus(404);
+  })
+});
+
+router.put('/file/recover', authenticateJWT, checkDrive, checkFile, async function(req, res, next) {
+  await prisma.file.update({
+    where: {
+      uuid: req.file.uuid,
+    },
+    data: {
+      isRemoved: false,
+    },
+  })
+  .then(() => {
+    return res.sendStatus(200)
+  })
+  .catch(() => {
+    return res.sendStatus(404);
+  })
+});
+
+router.delete('/file/delete', authenticateJWT, checkDrive, checkFile, async function(req, res, next) {
+  await prisma.file.delete({
+    where: {
+      uuid: req.body.file.uuid,
+    },
+  })
+  .then(
+    await prisma.drive.update({
+      where: {
+        uuid: req.body.driveUuid,
+      },
+      data: {
+        spaceUsed: { decrement: req.file.size },
+      },
+    })
+    .then(() => {
+      return res.sendStatus(200)
+    })
+    .catch(() => {
+      return res.sendStatus(404);
+    })
+  ) 
+  .catch(() => {
+    return res.sendStatus(404);
+  }) 
 });
   
 module.exports = router;

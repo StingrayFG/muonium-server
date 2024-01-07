@@ -25,21 +25,29 @@ model drive {
 
 model file {
   name              String
-  creationDate      DateTime? @db.Timestamptz(3)  @default(dbgenerated("NOW()")) 
   size              Int
+
+  creationDate      DateTime? @db.Timestamptz(3)  @default(dbgenerated("NOW()")) 
+  modificationDate  DateTime? @db.Timestamptz(3)  @default(dbgenerated("NOW()")) 
 
   uuid              String    @id
   ownerUuid         String 
   driveUuid         String
   parentUuid        String? 
+
+  isRemoved         Boolean   @default(false)
 }
 
 model folder {
   name              String
+
   creationDate      DateTime? @db.Timestamptz(3)  @default(dbgenerated("NOW()")) 
+  modificationDate  DateTime? @db.Timestamptz(3)  @default(dbgenerated("NOW()")) 
 
   uuid              String    @id
   ownerUuid         String 
   driveUuid         String
   parentUuid        String? 
+
+  isRemoved         Boolean   @default(false)
 }
