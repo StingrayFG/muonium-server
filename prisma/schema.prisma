@@ -30,8 +30,8 @@ model file {
 
   uuid              String    @id
   ownerUuid         String 
-  parentUuid        String? 
   driveUuid         String
+  parentUuid        String? 
 }
 
 model folder {
@@ -40,6 +40,6 @@ model folder {
 
   uuid              String    @id
   ownerUuid         String 
-  parentUuid        String? 
   driveUuid         String
+  parentUuid        String? 
 }
