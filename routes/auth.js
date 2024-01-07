@@ -40,7 +40,7 @@ router.post('/auth/login', async function(req, res, next) {
     .then(async result => (await getDrive(result)))
     .then(() => {
       if (user && drive) {
-        const accessToken = jwt.sign({ login: user.login }, process.env.ACCESS_TOKEN_SECRET);
+        const accessToken = jwt.sign({ uuid: user.uuid }, process.env.ACCESS_TOKEN_SECRET);
         return res.send({login: user.login, accessToken, userUuid: user.uuid, driveUuid: drive.uuid});
       } else {
         return res.sendStatus(404);
