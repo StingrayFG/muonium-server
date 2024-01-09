@@ -59,8 +59,8 @@ const checkDrive = async (req, res, next) => {
 
 const checkParentFolder = async (req, res, next) => {
   console.log('checkParentFolder');
-  if (req.body.parentUuid == 'root') {
-    req.body.parentAbsolutePath = '/root'
+  if (req.body.parentUuid == 'home') {
+    req.body.parentAbsolutePath = '/home'
     next();
   } else if (req.body.parentUuid == 'trash') {
     req.body.parentAbsolutePath = '/trash'

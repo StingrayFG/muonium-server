@@ -68,7 +68,7 @@ const checkDriveSpace = async (req, res, next) => {
 
 const checkParentFolder = async (req, res, next) => {
   console.log('checkParentFolder');
-  if (req.body.parentUuid === 'root') {
+  if (req.body.parentUuid === 'home') {
     next();
   } else if (req.body.parentUuid) {
     await prisma.folder.findUnique({
