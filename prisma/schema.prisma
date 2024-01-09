@@ -49,5 +49,6 @@ model folder {
   driveUuid         String
   parentUuid        String? 
 
+  absolutePath      String?
   isRemoved         Boolean   @default(false)
 }

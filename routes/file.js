@@ -292,31 +292,37 @@ router.put('/file/recover', authenticateJWT, checkDrive, checkFile, async functi
   })
 });
 
-router.delete('/file/delete', authenticateJWT, checkDrive, checkFile, async function(req, res, next) {
-  await prisma.file.delete({
-    where: {
-      uuid: req.body.file.uuid,
-    },
-  })
-  .then(
-    await prisma.drive.update({
-      where: {
-        uuid: req.body.driveUuid,
-      },
-      data: {
-        spaceUsed: { decrement: req.file.size },
-      },
-    })
-    .then(() => {
-      return res.sendStatus(200)
-    })
-    .catch(() => {
+router.post('/file/delete', authenticateJWT, checkDrive, checkFile, async function(req, res, next) {
+  fs.unlink('uploads/' +  req.file.name, async (err) => {
+    if (err) {
       return res.sendStatus(404);
-    })
-  ) 
-  .catch(() => {
-    return res.sendStatus(404);
-  }) 
+    } else {  
+      await prisma.file.delete({
+        where: {
+          uuid: req.file.uuid,
+        },
+      })
+      .then(
+        await prisma.drive.update({
+          where: {
+            uuid: req.body.driveUuid,
+          },
+          data: {
+            spaceUsed: { decrement: req.file.size },
+          },
+        })
+        .then(() => {
+          return res.sendStatus(200)
+        })
+        .catch(() => {
+          return res.sendStatus(404);
+        })
+      ) 
+      .catch(() => {
+        return res.sendStatus(404);
+      }) 
+    }
+  });
 });
   
 module.exports = router;
