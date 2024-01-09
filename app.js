@@ -7,6 +7,7 @@ var cors = require('cors')
 
 //var indexRouter = require('./routes/index');
 var authRouter = require('./routes/auth');
+var driveRouter = require('./routes/drive');
 var fileRouter = require('./routes/file');
 var folderRouter = require('./routes/folder');
 
@@ -32,5 +33,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', authRouter);
 app.use('/', fileRouter);
 app.use('/', folderRouter);
+app.use('/', driveRouter);
 
 module.exports = app;

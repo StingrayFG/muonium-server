@@ -14,8 +14,8 @@ router.post('/auth/login', async function(req, res, next) {
   const getUser = async () => {
     result = await prisma.user.findUnique({
       where: {
-        login: req.body.userData.login,
-        password: req.body.userData.password,
+        login: req.body.login,
+        password: req.body.password,
       }
     })
     user = result;
@@ -41,10 +41,13 @@ router.post('/auth/login', async function(req, res, next) {
     .then(() => {
       if (user && drive) {
         const accessToken = jwt.sign({ uuid: user.uuid }, process.env.ACCESS_TOKEN_SECRET);
-        return res.send({login: user.login, accessToken, userUuid: user.uuid, driveUuid: drive.uuid});
+        return res.send({ userUuid: user.uuid, login: user.login, accessToken, driveUuid: drive.uuid });
       } else {
         return res.sendStatus(404);
       }  
+    })
+    .catch(() => {
+      return res.sendStatus(404)
     })
   } catch (e) {
     return res.sendStatus(404);
@@ -58,8 +61,8 @@ router.post('/auth/signup', async function(req, res, next) {
       await prisma.user.create({
         data: {
           uuid: userUuid,
-          login: req.body.userData.login,
-          password: req.body.userData.password,
+          login: req.body.login,
+          password: req.body.password,
         },
       }),
       await prisma.drive.create({
@@ -73,6 +76,9 @@ router.post('/auth/signup', async function(req, res, next) {
     ])
     .then(() => {
       return res.sendStatus(201)
+    })
+    .catch(() => {
+      return res.sendStatus(404)
     })
   } catch (e) {
     return res.sendStatus(404);
