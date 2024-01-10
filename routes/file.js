@@ -62,7 +62,7 @@ const checkDriveSpace = async (req, res, next) => {
   if ((req.drive.spaceUsed + req.file.size) < req.drive.spaceTotal) {
     next();
   } else {
-    return res.sendStatus(404);
+    return res.sendStatus(413);
   }
 };
 

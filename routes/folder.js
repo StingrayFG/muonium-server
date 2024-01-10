@@ -35,12 +35,6 @@ const authenticateJWT = (req, res, next) => {
   }
 };
 
-const parseSize = async (req, res, next) => {
-  req.body = req.params;
-  req.file = { size: parseInt(req.headers['content-length']) };
-  next();
-}
-
 const checkDrive = async (req, res, next) => {
   console.log('checkDrive');
   await prisma.drive.findUnique({
@@ -72,7 +66,7 @@ const checkParentFolder = async (req, res, next) => {
       }
     })
     .then(result => {
-      req.body.parentAbsolutePath = result.absolutePath;
+      req.body.absolutePath = result.absolutePath;
       if (result) {
         next();
       }
@@ -122,10 +116,10 @@ router.post('/folder/create', authenticateJWT, checkDrive, checkParentFolder, as
   }) 
 });
 
-router.post('/folder/get', authenticateJWT, checkDrive, checkParentFolder, async function(req, res, next) {
-  let folder = {files: [], folders: [], absolutePath: req.body.parentAbsolutePath};
+router.post('/folder/get/uuid', authenticateJWT, checkDrive, checkParentFolder, async function(req, res, next) {
+  let folder = { files: [], folders: [], absolutePath: req.body.absolutePath };
   if (req.body.parentUuid === 'trash') {
-    Promise.all([
+    await Promise.all([
       folder.files = await prisma.file.findMany({
         orderBy: [
           {
@@ -158,8 +152,8 @@ router.post('/folder/get', authenticateJWT, checkDrive, checkParentFolder, async
     .catch(() => {
       return res.sendStatus(404);
     }) 
-  } else {
-    Promise.all([
+  } else if (req.body.parentUuid) {
+    await Promise.all([
       folder.files = await prisma.file.findMany({
         orderBy: [
           {
@@ -194,7 +188,138 @@ router.post('/folder/get', authenticateJWT, checkDrive, checkParentFolder, async
     .catch(() => {
       return res.sendStatus(404);
     }) 
+  } else {
+    return res.sendStatus(404);
   }
+});
+
+router.post('/folder/get/path', authenticateJWT, checkDrive, async function(req, res, next) {
+  let folder = { files: [], folders: [] };
+  if (req.body.path === '/trash') {
+    await Promise.all([
+      folder.files = await prisma.file.findMany({
+        orderBy: [
+          {
+            name: 'asc',
+          },
+        ],
+        where: {
+          ownerUuid: req.body.userUuid,
+          isRemoved: true,
+        },
+      }),
+      folder.folders = await prisma.folder.findMany({
+        orderBy: [
+          {
+            name: 'asc',
+          },
+        ],
+        where: {
+          ownerUuid: req.body.userUuid,
+          isRemoved: true,
+        },
+      }),
+    ])
+    .then(() => {
+      folder.files.forEach(file => {
+        file.name = path.parse(file.name).name;
+      });
+      folder.uuid = 'trash';
+      return res.send(folder);
+    }) 
+    .catch(() => {
+      return res.sendStatus(404);
+    }) 
+  } else if (req.body.path === '/home') {
+    await Promise.all([
+      folder.files = await prisma.file.findMany({
+        orderBy: [
+          {
+            name: 'asc',
+          },
+        ],
+        where: {
+          parentUuid: 'home',
+          ownerUuid: req.body.userUuid,
+          isRemoved: false,
+        },
+      }),
+      folder.folders = await prisma.folder.findMany({
+        orderBy: [
+          {
+            name: 'asc',
+          },
+        ],
+        where: {
+          parentUuid: 'home',
+          ownerUuid: req.body.userUuid,
+          isRemoved: false,
+        },
+      }),
+    ])
+    .then(() => {
+      folder.files.forEach(file => {
+        file.name = path.parse(file.name).name;
+      });
+      folder.uuid = 'home';
+      return res.send(folder);
+    })   
+    .catch(() => {
+      return res.sendStatus(404);
+    }) 
+  } else if ((req.body.path.slice(0, 6) !== '/trash') && (req.body.path.slice(0, 5) === '/home')) {
+    await prisma.folder.findFirst({
+      where: {
+        ownerUuid: req.body.userUuid,
+        absolutePath: req.body.path,
+      },
+    })
+    .then(async result => {
+      if(result) {
+        folder.uuid = result.uuid;
+        await Promise.all([
+          folder.files = await prisma.file.findMany({
+            orderBy: [
+              {
+                name: 'asc',
+              },
+            ],
+            where: {
+              parentUuid: result.uuid,
+              ownerUuid: req.body.userUuid,
+              isRemoved: false,
+            },
+          }),
+          folder.folders = await prisma.folder.findMany({
+            orderBy: [
+              {
+                name: 'asc',
+              },
+            ],
+            where: {
+              parentUuid: result.uuid,
+              ownerUuid: req.body.userUuid,
+              isRemoved: false,
+            },
+          }),
+        ])
+        .then(() => {
+          folder.files.forEach(file => {
+            file.name = path.parse(file.name).name;
+          });
+          return res.send(folder);
+        })   
+        .catch(() => {
+          return res.sendStatus(404);
+        }) 
+      } else {
+        return res.sendStatus(404);
+      }      
+    })
+  } else {
+    return res.sendStatus(404);
+  }
+  
 });
 
 router.put('/folder/rename', authenticateJWT, checkDrive, checkFolder, async function(req, res, next) {
