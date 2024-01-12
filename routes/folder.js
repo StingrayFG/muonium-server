@@ -110,8 +110,7 @@ router.post('/folder/create', authenticateJWT, checkDrive, checkParentFolder, as
   .then(() => {
     return res.sendStatus(201);
   }) 
-  .catch((e) => {
-    console.log(e)
+  .catch(() => {
     return res.sendStatus(404);
   }) 
 });
@@ -354,7 +353,7 @@ router.post('/folder/delete', authenticateJWT, checkDrive, checkFolder, async fu
   const deleteFile = async (file) => {
     fs.unlink('uploads/' + file.name, async (err) => {
       if (err) {
-        console.log(err)
+        return res.sendStatus(404);
       } else {  
         await prisma.file.delete({
           where: {

@@ -146,19 +146,16 @@ router.post('/file/download', authenticateJWT, checkDrive, checkFile, async func
 
 router.get('/file/download/:uuid/:token', async function(req, res, next) {
   jwt.verify(req.params.token, process.env.ACCESS_TOKEN_SECRET, async (err, file) => {
-    console.log(file);
-    if (err) { console.log(1); return res.sendStatus(403); }   
-    else if (file.uuid != req.params.uuid) { console.log(2); return res.sendStatus(403); }   
-    else if ((Math.floor(Date.now() / 1000) - file.iat) > 300) { console.log(3); return res.sendStatus(410); } 
+    if (err) { return res.sendStatus(403); }   
+    else if (file.uuid != req.params.uuid) { return res.sendStatus(403); }   
+    else if ((Math.floor(Date.now() / 1000) - file.iat) > 300) { return res.sendStatus(410); } 
     else {
-      console.log(4); 
       await prisma.file.findUnique({
         where: {
           uuid: req.params.uuid,
         }
       })
       .then(result => {
-        console.log(result)
         if (result) {
           res.set('Content-Disposition', `attachment; filename="${path.parse(result.name).name}"`);
           return res.sendFile(result.name, { root: 'uploads/'});
@@ -207,9 +204,6 @@ router.put('/file/copy', authenticateJWT, checkDrive, checkFile, async function(
   const originalName = path.parse(copiedFile.name).name; 
   const originalExtension = path.extname(originalName);
   copiedFile.name = path.parse(originalName).name + ' - copy' + originalExtension + '.' + Date.now()
-
-  console.log(originalFullName)
-  console.log(copiedFile.name);
 
   fs.copyFile('uploads/' + originalFullName, 'uploads/' + copiedFile.name, async (err) => {
     if (err) {
