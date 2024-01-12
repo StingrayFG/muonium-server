@@ -220,17 +220,71 @@ router.post('/folder/get/path', authenticateJWT, checkDrive, async function(req,
 router.put('/folder/rename', authenticateJWT, checkDrive, checkFolder, async function(req, res, next) {
   modificationDate = Date.now();
 
-  await prisma.folder.update({
+  const getNewAbsolutePath = (oldParentAbsolutePath, newParentAbsolutePath, oldAbsolutePath) => {
+    let newAbsolutePath = oldAbsolutePath;
+    newAbsolutePath = newAbsolutePath.slice(oldParentAbsolutePath.length, oldAbsolutePath.length);
+    newAbsolutePath = newParentAbsolutePath + newAbsolutePath;
+    return newAbsolutePath;
+  }
+
+  await prisma.folder.findUnique({
     where: {
       uuid: req.folder.uuid,
     },
-    data: {
-      name: req.body.folderName,
-      modificationDate: new Date(modificationDate),
-    },
   })
-  .then(() => {
-    return res.sendStatus(200);
+  .then(async result => {
+    let oldAbsolutePath = result.absolutePath;
+    let newAbsolutePath = oldAbsolutePath;
+    newAbsolutePath = newAbsolutePath.slice(0, oldAbsolutePath.length - result.name.length);
+    newAbsolutePath = newAbsolutePath + req.body.folderName;
+    
+    await prisma.folder.update({
+      where: {
+        uuid: req.folder.uuid,
+      },
+      data: {
+        name: req.body.folderName,
+        modificationDate: new Date(modificationDate),
+        absolutePath: newAbsolutePath,
+      },
+    })
+    .then(async () => {
+      await prisma.folder.findMany({
+        where: {
+          NOT: {
+            uuid: req.folder.uuid,
+          },
+          absolutePath: {
+            startsWith: result.absolutePath,
+          },
+        },
+      })
+      .then(async result => {  
+        result.forEach(async folder => {
+          folder.absolutePath = getNewAbsolutePath(oldAbsolutePath, newAbsolutePath, folder.absolutePath);
+          await prisma.folder.update({
+            where: {
+              uuid: folder.uuid,
+            },
+            data: {
+              absolutePath: folder.absolutePath,
+            }
+          })
+          .catch(() => {
+            return res.sendStatus(404);
+          })
+        });
+      })
+      .then(() => {
+        return res.sendStatus(200);
+      })
+      .catch(() => {
+        return res.sendStatus(404);
+      })
+    })
+    .catch(() => {
+      return res.sendStatus(404);
+    })
   })
   .catch(() => {
     return res.sendStatus(404);
