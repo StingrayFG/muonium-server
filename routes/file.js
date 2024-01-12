@@ -35,7 +35,7 @@ const authenticateJWT = (req, res, next) => {
   }
 };
 
-const parseSize = async (req, res, next) => {
+const parsePreUpload = async (req, res, next) => {
   req.body = req.params;
   req.file = { size: parseInt(req.headers['content-length']) };
   next();
@@ -106,7 +106,7 @@ const checkFile = async (req, res, next) => {
 };
 
 // Endpoints
-router.post('/file/upload/:userUuid/:driveUuid/:parentUuid', parseSize, authenticateJWT, 
+router.post('/file/upload/:userUuid/:driveUuid/:parentUuid', parsePreUpload, authenticateJWT, 
 checkDrive, checkDriveSpace, checkParentFolder, upload.single('file'), async function(req, res, next) {
   await prisma.file.create({
     data: {

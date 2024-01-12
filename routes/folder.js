@@ -54,10 +54,10 @@ const checkDrive = async (req, res, next) => {
 const checkParentFolder = async (req, res, next) => {
   console.log('checkParentFolder');
   if (req.body.parentUuid == 'home') {
-    req.body.parentAbsolutePath = '/home'
+    req.body.absolutePath = '/home'
     next();
   } else if (req.body.parentUuid == 'trash') {
-    req.body.parentAbsolutePath = '/trash'
+    req.body.absolutePath = '/trash'
     next();
   } else if (req.body.parentUuid) {
     await prisma.folder.findUnique({
@@ -117,7 +117,7 @@ router.post('/folder/create', authenticateJWT, checkDrive, checkParentFolder, as
 });
 
 router.post('/folder/get/uuid', authenticateJWT, checkDrive, checkParentFolder, async function(req, res, next) {
-  let folder = { files: [], folders: [], absolutePath: req.body.absolutePath };
+  let folder = { files: [], folders: [], uuid: req.body.parentUuid, absolutePath: req.body.absolutePath };
   if (req.body.parentUuid === 'trash') {
     await Promise.all([
       folder.files = await prisma.file.findMany({
@@ -194,79 +194,10 @@ router.post('/folder/get/uuid', authenticateJWT, checkDrive, checkParentFolder, 
 });
 
 router.post('/folder/get/path', authenticateJWT, checkDrive, async function(req, res, next) {
-  let folder = { files: [], folders: [] };
   if (req.body.path === '/trash') {
-    await Promise.all([
-      folder.files = await prisma.file.findMany({
-        orderBy: [
-          {
-            name: 'asc',
-          },
-        ],
-        where: {
-          ownerUuid: req.body.userUuid,
-          isRemoved: true,
-        },
-      }),
-      folder.folders = await prisma.folder.findMany({
-        orderBy: [
-          {
-            name: 'asc',
-          },
-        ],
-        where: {
-          ownerUuid: req.body.userUuid,
-          isRemoved: true,
-        },
-      }),
-    ])
-    .then(() => {
-      folder.files.forEach(file => {
-        file.name = path.parse(file.name).name;
-      });
-      folder.uuid = 'trash';
-      return res.send(folder);
-    }) 
-    .catch(() => {
-      return res.sendStatus(404);
-    }) 
+    return res.send({ uuid: 'trash'});
   } else if (req.body.path === '/home') {
-    await Promise.all([
-      folder.files = await prisma.file.findMany({
-        orderBy: [
-          {
-            name: 'asc',
-          },
-        ],
-        where: {
-          parentUuid: 'home',
-          ownerUuid: req.body.userUuid,
-          isRemoved: false,
-        },
-      }),
-      folder.folders = await prisma.folder.findMany({
-        orderBy: [
-          {
-            name: 'asc',
-          },
-        ],
-        where: {
-          parentUuid: 'home',
-          ownerUuid: req.body.userUuid,
-          isRemoved: false,
-        },
-      }),
-    ])
-    .then(() => {
-      folder.files.forEach(file => {
-        file.name = path.parse(file.name).name;
-      });
-      folder.uuid = 'home';
-      return res.send(folder);
-    })   
-    .catch(() => {
-      return res.sendStatus(404);
-    }) 
+    return res.send({ uuid: 'home'});
   } else if ((req.body.path.slice(0, 6) !== '/trash') && (req.body.path.slice(0, 5) === '/home')) {
     await prisma.folder.findFirst({
       where: {
@@ -275,47 +206,11 @@ router.post('/folder/get/path', authenticateJWT, checkDrive, async function(req,
       },
     })
     .then(async result => {
-      if(result) {
-        folder.uuid = result.uuid;
-        await Promise.all([
-          folder.files = await prisma.file.findMany({
-            orderBy: [
-              {
-                name: 'asc',
-              },
-            ],
-            where: {
-              parentUuid: result.uuid,
-              ownerUuid: req.body.userUuid,
-              isRemoved: false,
-            },
-          }),
-          folder.folders = await prisma.folder.findMany({
-            orderBy: [
-              {
-                name: 'asc',
-              },
-            ],
-            where: {
-              parentUuid: result.uuid,
-              ownerUuid: req.body.userUuid,
-              isRemoved: false,
-            },
-          }),
-        ])
-        .then(() => {
-          folder.files.forEach(file => {
-            file.name = path.parse(file.name).name;
-          });
-          return res.send(folder);
-        })   
-        .catch(() => {
-          return res.sendStatus(404);
-        }) 
-      } else {
-        return res.sendStatus(404);
-      }      
+      return res.send({ uuid: result.uuid });
     })
+    .catch(() => {
+      return res.sendStatus(404);
+    }) 
   } else {
     return res.sendStatus(404);
   }
