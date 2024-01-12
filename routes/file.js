@@ -128,7 +128,7 @@ checkDrive, checkDriveSpace, checkParentFolder, upload.single('file'), async fun
       },
     })
     .then(() => {
-      return res.sendStatus(201)
+      return res.sendStatus(201);
     })
     .catch(() => {
       return res.sendStatus(404);
@@ -251,7 +251,7 @@ router.put('/file/move', authenticateJWT, checkDrive, checkFile, async function(
     },
   })
   .then(() => {
-    return res.sendStatus(200)
+    return res.sendStatus(200);
   })
   .catch(() => {
     return res.sendStatus(404);
@@ -268,7 +268,7 @@ router.put('/file/remove', authenticateJWT, checkDrive, checkFile, async functio
     },
   })
   .then(() => {
-    return res.sendStatus(200)
+    return res.sendStatus(200);
   })
   .catch(() => {
     return res.sendStatus(404);
@@ -285,7 +285,7 @@ router.put('/file/recover', authenticateJWT, checkDrive, checkFile, async functi
     },
   })
   .then(() => {
-    return res.sendStatus(200)
+    return res.sendStatus(200);
   })
   .catch(() => {
     return res.sendStatus(404);

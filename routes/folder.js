@@ -146,6 +146,10 @@ router.post('/folder/get/uuid', authenticateJWT, checkDrive, checkParentFolder, 
     .then(() => {
       folder.files.forEach(file => {
         file.name = path.parse(file.name).name;
+        file.type = 'file';
+      });
+      folder.folders.forEach(folder => {
+        folder.type = 'file';
       });
       return res.send(folder);
     }) 
@@ -182,6 +186,10 @@ router.post('/folder/get/uuid', authenticateJWT, checkDrive, checkParentFolder, 
     .then(() => {
       folder.files.forEach(file => {
         file.name = path.parse(file.name).name;
+        file.type = 'file';
+      });
+      folder.folders.forEach(folder => {
+        folder.type = 'file';
       });
       return res.send(folder);
     })   
@@ -301,7 +309,7 @@ router.put('/folder/move', authenticateJWT, checkDrive, checkFolder, async funct
     },
   })
   .then(() => {
-    return res.sendStatus(200)
+    return res.sendStatus(200);
   })
   .catch(() => {
     return res.sendStatus(404);
@@ -318,7 +326,7 @@ router.put('/folder/remove', authenticateJWT, checkDrive, checkFolder, async fun
     },
   })
   .then(() => {
-    return res.sendStatus(200)
+    return res.sendStatus(200);
   })
   .catch(() => {
     return res.sendStatus(404);
@@ -335,7 +343,7 @@ router.put('/folder/recover', authenticateJWT, checkDrive, checkFolder, async fu
     },
   })
   .then(() => {
-    return res.sendStatus(200)
+    return res.sendStatus(200);
   })
   .catch(() => {
     return res.sendStatus(404);
@@ -435,7 +443,6 @@ router.post('/folder/delete', authenticateJWT, checkDrive, checkFolder, async fu
     let nextDeletedParentsUuids = [];
 
     while (deletedParentsUuids.length > 0) {
-      //console.log(deletedParentsUuids);
       await Promise.all([
         nextDeletedParentsUuids = await handleChildrenFolders(deletedParentsUuids),
         handleChildrenFiles(deletedParentsUuids)
