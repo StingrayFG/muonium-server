@@ -455,23 +455,40 @@ router.post('/folder/delete', authenticateJWT, checkDrive, checkFolder, async fu
     };
   };
 
+  const deleteBookmark = async () => {
+    console.log(req.body)
+    try {
+      await prisma.bookmark.delete({
+        where: {
+          ownerUuid_folderUuid: {
+            ownerUuid: req.body.userUuid,
+            folderUuid: req.body.folderUuid,
+          },
+        },
+      })
+      .then(e => {
+        console.log(e)  
+      })
+    } catch { }
+  };
+
   await prisma.folder.delete({
     where: {
       uuid: req.folder.uuid,
     },
   })
   .then(() => {
-    deleteChildren()
-    .then(() => {
-      return res.sendStatus(200);     
-    })
-    .catch(() => {
-      return res.sendStatus(404);
-    })  
+    deleteChildren();
+  })
+  .then(() => {
+    deleteBookmark();
+  })
+  .then(() => {
+    return res.sendStatus(200);     
   })
   .catch(() => {
     return res.sendStatus(404);
-  })
+  })  
 });
   
 module.exports = router;
