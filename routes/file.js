@@ -198,12 +198,24 @@ router.put('/file/rename', authenticateJWT, checkDrive, checkFile, async functio
 
 router.put('/file/copy', authenticateJWT, checkDrive, checkFile, async function(req, res, next) {
   const originalFullName = req.file.name;
+  const originalParentUuid = req.file.parentUuid;
+
   let copiedFile = req.file;
+  copiedFile.parentUuid = req.body.parentUuid;
   copiedFile.uuid = crypto.randomUUID();
+
+  let newDate = Date.now()
+  copiedFile.creationDate = new Date(newDate);
+  copiedFile.modificationDate = new Date(newDate);
 
   const originalName = path.parse(copiedFile.name).name; 
   const originalExtension = path.extname(originalName);
-  copiedFile.name = path.parse(originalName).name + ' - copy' + originalExtension + '.' + Date.now()
+
+  if (req.body.parentUuid === originalParentUuid) {
+    copiedFile.name = path.parse(originalName).name + ' - copy' + originalExtension + '.' + newDate;
+  } else {
+    copiedFile.name = path.parse(originalName).name + originalExtension + '.' + newDate;
+  }
 
   fs.copyFile('uploads/' + originalFullName, 'uploads/' + copiedFile.name, async (err) => {
     if (err) {

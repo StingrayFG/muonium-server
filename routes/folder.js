@@ -188,7 +188,7 @@ router.post('/folder/get/uuid', authenticateJWT, checkDrive, checkParentFolder, 
         file.type = 'file';
       });
       folder.folders.forEach(folder => {
-        folder.type = 'file';
+        folder.type = 'folder';
       });
       return res.send(folder);
     })   
@@ -277,13 +277,13 @@ router.put('/folder/rename', authenticateJWT, checkDrive, checkFolder, async fun
               absolutePath: folder.absolutePath,
             }
           })
+          .then(() => {
+            return res.sendStatus(200);
+          })
           .catch(() => {
             return res.sendStatus(404);
           })
         });
-      })
-      .then(() => {
-        return res.sendStatus(200);
       })
       .catch(() => {
         return res.sendStatus(404);
@@ -413,9 +413,7 @@ router.post('/folder/delete', authenticateJWT, checkDrive, checkFolder, async fu
         },
       })
       .then(async foldersToDelete  => {   
-        foldersToDelete.forEach(folder => {
-          nextDeletedParentsUuids.push(folder.uuid);
-        });
+        nextDeletedParentsUuids = foldersToDelete.map(f => f.uuid);
 
         await prisma.folder.deleteMany({
           where: {
@@ -456,7 +454,6 @@ router.post('/folder/delete', authenticateJWT, checkDrive, checkFolder, async fu
   };
 
   const deleteBookmark = async () => {
-    console.log(req.body)
     try {
       await prisma.bookmark.delete({
         where: {
