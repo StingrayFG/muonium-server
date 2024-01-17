@@ -234,12 +234,16 @@ router.put('/folder/rename', authenticateJWT, checkDrive, checkFolder, async fun
     return newAbsolutePath;
   }
 
+  let originalFolder;
+
   await prisma.folder.findUnique({
     where: {
       uuid: req.folder.uuid,
     },
   })
   .then(async result => {
+    originalFolder = result;
+
     let oldAbsolutePath = result.absolutePath;
     let newAbsolutePath = oldAbsolutePath;
     newAbsolutePath = newAbsolutePath.slice(0, oldAbsolutePath.length - result.name.length);
@@ -262,12 +266,12 @@ router.put('/folder/rename', authenticateJWT, checkDrive, checkFolder, async fun
             uuid: req.folder.uuid,
           },
           absolutePath: {
-            startsWith: result.absolutePath,
+            startsWith: originalFolder.absolutePath,
           },
         },
       })
       .then(async result => {  
-        result.forEach(async folder => {
+        for await (let folder of result) {
           folder.absolutePath = getNewAbsolutePath(oldAbsolutePath, newAbsolutePath, folder.absolutePath);
           await prisma.folder.update({
             where: {
@@ -277,17 +281,14 @@ router.put('/folder/rename', authenticateJWT, checkDrive, checkFolder, async fun
               absolutePath: folder.absolutePath,
             }
           })
-          .then(() => {
-            return res.sendStatus(200);
-          })
-          .catch(() => {
-            return res.sendStatus(404);
-          })
-        });
+        }
       })
-      .catch(() => {
+      .then(() => {
+        return res.sendStatus(200);
+      })
+      .catch((e) => {
         return res.sendStatus(404);
-      })
+      })    
     })
     .catch(() => {
       return res.sendStatus(404);
