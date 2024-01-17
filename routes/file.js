@@ -19,7 +19,7 @@ var storage = multer.diskStorage({
     cb(null, file.originalname + '.' + Date.now())  
   }
 })
-var upload = multer({ storage: storage });
+var upload = multer({ storage: storage, limits: { fileSize: 1024 * 1024 *  process.env.MAX_FILE_SIZE } });
 
 const authenticateJWT = (req, res, next) => {
   const authHeader = req.headers.authorization;

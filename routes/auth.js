@@ -69,7 +69,7 @@ router.post('/auth/signup', async function(req, res, next) {
         data: {
           uuid: crypto.randomUUID(),
           ownerUuid: userUuid,
-          spaceTotal: 1024 * 1024 * 100,
+          spaceTotal: 1024 * 1024 * process.env.NEW_DRIVE_SIZE,
           spaceUsed: 0,
         },
       })
