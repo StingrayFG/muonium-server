@@ -148,7 +148,7 @@ router.post('/folder/get/uuid', authenticateJWT, checkDrive, checkParentFolder, 
         file.type = 'file';
       });
       folder.folders.forEach(folder => {
-        folder.type = 'file';
+        folder.type = 'folder';
       });
       return res.send(folder);
     }) 
