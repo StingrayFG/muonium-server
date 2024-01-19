@@ -104,7 +104,7 @@ router.post('/folder/create', authenticateJWT, checkDrive, checkParentFolder, as
       ownerUuid: req.user.uuid,
       parentUuid: req.body.parentUuid,
       driveUuid: req.body.driveUuid,
-      absolutePath: req.body.parentAbsolutePath + '/' + req.body.folderName,
+      absolutePath: req.body.absolutePath + '/' + req.body.folderName,
     }
   })
   .then(() => {
