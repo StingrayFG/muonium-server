@@ -21,7 +21,6 @@ router.post('/auth/login', async function(req, res, next) {
       })
       .then(result => {
         if (bcrypt.compareSync(req.body.password, result.password)) {
-          console.log(result)
           user = result;
           resolve(result);
         } else {
@@ -54,7 +53,6 @@ router.post('/auth/login', async function(req, res, next) {
   try {
     await getUser()
     .then(async result => {
-      console.log(result)
       await getDrive(result)
     })
     .then(() => {
