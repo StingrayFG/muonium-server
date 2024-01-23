@@ -8,49 +8,63 @@ var router = express.Router();
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 
+const redis = require('redis');
+const client = redis.createClient();
+client.connect();
+
 router.post('/auth/login', async function(req, res, next) {
-  let user;
-  let drive;
+  const loginAttempt = await client.get(req.headers['x-forwarded-for'] + '-login');
+  console.log(loginAttempt)
 
-  const getUser = async () => {
-    return new Promise( async function(resolve, reject) {
-      await prisma.user.findUnique({
-        where: {
-          login: req.body.login,
-        }
-      })
-      .then(result => {
-        if (bcrypt.compareSync(req.body.password, result.password)) {
-          user = result;
-          resolve(result);
-        } else {
-          reject();
-        }
-      })
-    })
-  }
+  if (!loginAttempt) {
+    client.set(req.headers['x-forwarded-for'] + '-login', ' ');
+    client.expire(req.headers['x-forwarded-for'] + '-login', 30);
 
-  const getDrive = async (u) => {
-    return new Promise( async function(resolve, reject) {
-      if (u) {
-        result = await prisma.drive.findFirst({
+    let user;
+    let drive;
+  
+    const getUser = async () => {
+      return new Promise( async function(resolve, reject) {
+        await prisma.user.findUnique({
           where: {
-            ownerUuid: u.uuid,
+            login: req.body.login,
           }
         })
         .then(result => {
-          if (result) {
-            drive = result;
-            resolve(result);
+          if (result) { 
+            if (bcrypt.compareSync(req.body.password, result.password)) {
+              user = result;
+              resolve(result);
+            } else {
+              reject();
+            }
           } else {
             reject();
           }
         })
-      }
-    })
-  }
+      })
+    }
   
-  try {
+    const getDrive = async (u) => {
+      return new Promise( async function(resolve, reject) {
+        if (u) {
+          result = await prisma.drive.findFirst({
+            where: {
+              ownerUuid: u.uuid,
+            }
+          })
+          .then(result => {
+            if (result) {
+              drive = result;
+              resolve(result);
+            } else {
+              reject();
+            }
+          })
+        }
+      })
+    }
+    
     await getUser()
     .then(async result => {
       await getDrive(result)
@@ -65,14 +79,16 @@ router.post('/auth/login', async function(req, res, next) {
     })
     .catch(() => {
       return res.sendStatus(404)
-    })
-  } catch (e) {
-    return res.sendStatus(404);
+    })  
+  } else {
+    return res.sendStatus(423);
   }
 });
 
 router.post('/auth/signup', async function(req, res, next) {
-  try {
+  const signupAttempt = await client.get(req.headers['x-forwarded-for'] + '-signup');
+
+  if (!signupAttempt) {
     let userUuid = crypto.randomUUID();
 
     const saltRounds = 10;
@@ -96,13 +112,16 @@ router.post('/auth/signup', async function(req, res, next) {
       })
     ])
     .then(() => {
+      client.set(req.headers['x-forwarded-for'] + '-signup', ' ');
+      client.expire(req.headers['x-forwarded-for'] + '-signup', 3600);
+
       return res.sendStatus(201)
     })
     .catch(() => {
-      return res.sendStatus(404)
+      return res.sendStatus(409)
     })
-  } catch (e) {
-    return res.sendStatus(404);
+  } else {
+    return res.sendStatus(423);
   }
 });
 
