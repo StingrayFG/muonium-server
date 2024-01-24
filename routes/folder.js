@@ -317,16 +317,28 @@ router.put('/folder/move', authenticateJWT, checkDrive, checkFolder, async funct
 });
 
 router.put('/folder/remove', authenticateJWT, checkDrive, checkFolder, async function(req, res, next) {
-  await prisma.folder.update({
+  await prisma.folder.findUnique({
     where: {
       uuid: req.folder.uuid,
     },
-    data: {
-      isRemoved: true,
-    },
   })
-  .then(() => {
-    return res.sendStatus(200);
+  .then(async () => {
+    await prisma.folder.updateMany({
+      where: {
+        absolutePath: {
+          startsWith: result.absolutePath,
+        },
+      },
+      data: {
+        isRemoved: true,
+      }
+    })
+    .then(() => {
+      return res.sendStatus(200);
+    })
+    .catch(() => {
+      return res.sendStatus(404);
+    })
   })
   .catch(() => {
     return res.sendStatus(404);
