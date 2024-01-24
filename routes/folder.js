@@ -21,7 +21,7 @@ var storage = multer.diskStorage({
 })
 var upload = multer({ storage: storage });
 
-const authenticateJWT = (req, res, next) => {
+const authenticateJWT = (req, res, next) => { // check JWT in Authorization header
   const authHeader = req.headers.authorization;
   if (authHeader) {
     const token = authHeader.split(' ')[1];
@@ -35,7 +35,8 @@ const authenticateJWT = (req, res, next) => {
   }
 };
 
-const checkDrive = async (req, res, next) => {
+// Check whether a drive with uuid specified in request exists
+const checkDrive = async (req, res, next) => { 
   console.log('checkDrive');
   await prisma.drive.findUnique({
     where: {
@@ -51,6 +52,7 @@ const checkDrive = async (req, res, next) => {
   })
 };
 
+// Check whether a parent folder with uuid specified in request exists
 const checkParentFolder = async (req, res, next) => {
   console.log('checkParentFolder');
   if (req.body.parentUuid == 'home') {
@@ -77,7 +79,8 @@ const checkParentFolder = async (req, res, next) => {
   }
 };
 
-const checkFolder = async (req, res, next) => {
+// Check whether a manipulated folder with uuid specified in request exists. If it does, save it's data to request
+const checkFolder = async (req, res, next) => { 
   console.log('checkFolder');
   await prisma.folder.findUnique({
     where: {
@@ -96,6 +99,7 @@ const checkFolder = async (req, res, next) => {
 };
 
 // Endpoints
+// Create a new folder with given name
 router.post('/folder/create', authenticateJWT, checkDrive, checkParentFolder, async function(req, res, next) {
   await prisma.folder.create({
     data: {
@@ -104,7 +108,8 @@ router.post('/folder/create', authenticateJWT, checkDrive, checkParentFolder, as
       ownerUuid: req.user.uuid,
       parentUuid: req.body.parentUuid,
       driveUuid: req.body.driveUuid,
-      absolutePath: req.body.absolutePath + '/' + req.body.folderName,
+      // Get the absolute path of a newly created folder based on its parent path
+      absolutePath: req.body.absolutePath + '/' + req.body.folderName, 
     }
   })
   .then(() => {
@@ -200,13 +205,17 @@ router.post('/folder/get/uuid', authenticateJWT, checkDrive, checkParentFolder, 
   }
 });
 
+// Get the folder uuid based on the requested path
 router.post('/folder/get/path', authenticateJWT, checkDrive, async function(req, res, next) {
+  // Check whether path in request is correct (starts with '/home') or not 
+  // (traversing folders in trash is prohibited, so only exact '/trash' path is acceptable)
   if (req.body.path === '/trash') {
     return res.send({ uuid: 'trash'});
   } else if (req.body.path === '/home') {
     return res.send({ uuid: 'home'});
   } else if ((req.body.path.slice(0, 6) !== '/trash') && (req.body.path.slice(0, 5) === '/home')) {
-    await prisma.folder.findFirst({
+    // Find a folder with the given absolute path, return it's uuid if it exists
+    await prisma.folder.findFirst({ 
       where: {
         ownerUuid: req.body.userUuid,
         absolutePath: req.body.path,
@@ -224,9 +233,12 @@ router.post('/folder/get/path', authenticateJWT, checkDrive, async function(req,
   
 });
 
+// Rename folder with the given uuid
 router.put('/folder/rename', authenticateJWT, checkDrive, checkFolder, async function(req, res, next) {
   modificationDate = Date.now();
 
+  // A function used to update children's absolute path. 
+  // Simply replaces the beginning of the passed child's absolute path with the new path of the renamed folder
   const getNewAbsolutePath = (oldParentAbsolutePath, newParentAbsolutePath, oldAbsolutePath) => {
     let newAbsolutePath = oldAbsolutePath;
     newAbsolutePath = newAbsolutePath.slice(oldParentAbsolutePath.length, oldAbsolutePath.length);
@@ -249,7 +261,7 @@ router.put('/folder/rename', authenticateJWT, checkDrive, checkFolder, async fun
     newAbsolutePath = newAbsolutePath.slice(0, oldAbsolutePath.length - result.name.length);
     newAbsolutePath = newAbsolutePath + req.body.folderName;
     
-    await prisma.folder.update({
+    await prisma.folder.update({ // Update the renamed folder's data in the database
       where: {
         uuid: req.folder.uuid,
       },
@@ -260,7 +272,7 @@ router.put('/folder/rename', authenticateJWT, checkDrive, checkFolder, async fun
       },
     })
     .then(async () => {
-      await prisma.folder.findMany({
+      await prisma.folder.findMany({ // Find all the children of the renamed folder
         where: {
           NOT: {
             uuid: req.folder.uuid,
@@ -270,7 +282,7 @@ router.put('/folder/rename', authenticateJWT, checkDrive, checkFolder, async fun
           },
         },
       })
-      .then(async result => {  
+      .then(async result => { // Update absolute paths of all the children of the renamed folder
         for await (let folder of result) {
           folder.absolutePath = getNewAbsolutePath(oldAbsolutePath, newAbsolutePath, folder.absolutePath);
           await prisma.folder.update({
@@ -299,6 +311,7 @@ router.put('/folder/rename', authenticateJWT, checkDrive, checkFolder, async fun
   })
 });
 
+// Move folder with the given uuid to be inside the specified parentUuid
 router.put('/folder/move', authenticateJWT, checkDrive, checkFolder, async function(req, res, next) {
   await prisma.folder.update({
     where: {
@@ -316,6 +329,7 @@ router.put('/folder/move', authenticateJWT, checkDrive, checkFolder, async funct
   })
 });
 
+// Set folder with the given uuid and all it's children's field 'isRemoved' to true
 router.put('/folder/remove', authenticateJWT, checkDrive, checkFolder, async function(req, res, next) {
   await prisma.folder.findUnique({
     where: {
@@ -345,6 +359,7 @@ router.put('/folder/remove', authenticateJWT, checkDrive, checkFolder, async fun
   })
 });
 
+// Set folder with the given uuid and all it's children's field 'isRemoved' to false
 router.put('/folder/recover', authenticateJWT, checkDrive, checkFolder, async function(req, res, next) {
   await prisma.folder.update({
     where: {
@@ -362,7 +377,16 @@ router.put('/folder/recover', authenticateJWT, checkDrive, checkFolder, async fu
   })
 });
 
+// Delete folder with the given uuid and all it's children
+// 1. Save the uuid of the given folder to deletedParentsUuids
+// 2. Find the folders with the parentUuid included in deletedParentsUuids
+// 3. Add uuids of these folders to nextDeletedParentsUuids
+// 4. Delete the files and folders with parentUuids included in deletedParentsUuids. Update the used drive space while deleting files
+// 5. Save nextDeletedParentsUuids to deletedParentsUuids.
+// 6. Repeat by returning to 2.
 router.post('/folder/delete', authenticateJWT, checkDrive, checkFolder, async function(req, res, next) {
+
+  // Delete a file from disk
   const deleteFile = async (file) => {
     fs.unlink('uploads/' + file.name, async (err) => {
       if (err) {
@@ -377,7 +401,8 @@ router.post('/folder/delete', authenticateJWT, checkDrive, checkFolder, async fu
     });
   }
 
-  const handleChildrenFiles = async (deletedParentsUuids) => {
+  // Delete files with the given parent uuids and update drive's used space
+  const handleChildrenFiles = async (deletedParentsUuids) => { 
     return new Promise( async function(resolve, reject) {
       await prisma.file.findMany({
         where: {
@@ -393,7 +418,7 @@ router.post('/folder/delete', authenticateJWT, checkDrive, checkFolder, async fu
           deleteFile(file);
         });
 
-        await prisma.drive.update({
+        await prisma.drive.update({ // Update the used drive space
           where: {
             uuid: req.body.driveUuid,
           },
@@ -414,6 +439,7 @@ router.post('/folder/delete', authenticateJWT, checkDrive, checkFolder, async fu
     })
   }
 
+  // Delete folders with the given parent uuids, return their uuids as the new parent uuids
   const handleChildrenFolders = async (deletedParentsUuids) => {
     return new Promise( async function(resolve, reject) {
       nextDeletedParentsUuids = [];
@@ -448,6 +474,7 @@ router.post('/folder/delete', authenticateJWT, checkDrive, checkFolder, async fu
     })
   }
 
+  // Delete children, get new deletedParentUuids
   const deleteChildren = async () => {
     let deletedParentsUuids = [req.folder.uuid];
     let nextDeletedParentsUuids = [];
@@ -465,7 +492,8 @@ router.post('/folder/delete', authenticateJWT, checkDrive, checkFolder, async fu
       })
     };
   };
-
+  
+  // Delete the deleted folder's bookmark
   const deleteBookmark = async () => {
     try {
       await prisma.bookmark.delete({
