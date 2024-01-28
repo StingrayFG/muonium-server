@@ -482,7 +482,8 @@ router.post('/folder/delete', authenticateJWT, checkDrive, checkFolder, async fu
     while (deletedParentsUuids.length > 0) {
       await Promise.all([
         nextDeletedParentsUuids = await handleChildrenFolders(deletedParentsUuids),
-        handleChildrenFiles(deletedParentsUuids)
+        handleChildrenFiles(deletedParentsUuids),
+        deleteBookmarks(deletedParentsUuids),
       ])   
       .then(() => {
         deletedParentsUuids = nextDeletedParentsUuids;
@@ -494,20 +495,22 @@ router.post('/folder/delete', authenticateJWT, checkDrive, checkFolder, async fu
   };
   
   // Delete the deleted folder's bookmark
-  const deleteBookmark = async () => {
-    try {
-      await prisma.bookmark.delete({
-        where: {
-          ownerUuid_folderUuid: {
-            ownerUuid: req.body.userUuid,
-            folderUuid: req.body.folderUuid,
+  const deleteBookmarks = async (deletedParentsUuids) => {
+    for await (let uuid of deletedParentsUuids) { 
+      try {
+        await prisma.bookmark.delete({
+          where: {
+            ownerUuid_folderUuid: {
+              ownerUuid: req.body.userUuid,
+              folderUuid: uuid,
+            },
           },
-        },
-      })
-      .then(e => {
-        console.log(e)  
-      })
-    } catch { }
+        })
+        .then(e => {
+          console.log(e)  
+        })
+      } catch { }
+    }
   };
 
   await prisma.folder.delete({
@@ -517,9 +520,6 @@ router.post('/folder/delete', authenticateJWT, checkDrive, checkFolder, async fu
   })
   .then(() => {
     deleteChildren();
-  })
-  .then(() => {
-    deleteBookmark();
   })
   .then(() => {
     return res.sendStatus(200);     
