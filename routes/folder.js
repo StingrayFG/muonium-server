@@ -21,14 +21,20 @@ var storage = multer.diskStorage({
 })
 var upload = multer({ storage: storage });
 
-const authenticateJWT = (req, res, next) => { // check JWT in Authorization header
+// check JWT in Authorization header
+const authenticateJWT = (req, res, next) => { 
   const authHeader = req.headers.authorization;
   if (authHeader) {
     const token = authHeader.split(' ')[1];
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
-      if (err) { return res.sendStatus(403); }   
-      else if (user.uuid != req.body.userUuid) { return res.sendStatus(403); }   
-      else { req.user = user; next(); } 
+      if (err) { 
+        return res.sendStatus(403); 
+      } else if (user.uuid != req.body.userUuid) { 
+        return res.sendStatus(403); 
+      } else { 
+        req.user = user; 
+        next();
+      } 
     });
   } else {
     return res.sendStatus(401);
@@ -44,8 +50,12 @@ const checkDrive = async (req, res, next) => {
     }
   })
   .then(result => {
-    req.drive = result;
-    next();
+    if (result) {
+      req.drive = result;
+      next();
+    } else {
+      return res.sendStatus(404);
+    }
   })
   .catch(() => {
     return res.sendStatus(404);
@@ -68,9 +78,11 @@ const checkParentFolder = async (req, res, next) => {
       }
     })
     .then(result => {
-      req.body.absolutePath = result.absolutePath;
       if (result) {
+        req.body.absolutePath = result.absolutePath;
         next();
+      } else {
+        return res.sendStatus(404);
       }
     })
     .catch(() => {
@@ -79,7 +91,7 @@ const checkParentFolder = async (req, res, next) => {
   }
 };
 
-// Check whether a manipulated folder with uuid specified in request exists. If it does, save it's data to request
+// Check whether the edited folder with uuid specified in request exists. If it does, save it's data to request
 const checkFolder = async (req, res, next) => { 
   console.log('checkFolder');
   await prisma.folder.findUnique({
@@ -91,6 +103,8 @@ const checkFolder = async (req, res, next) => {
     if (result) {
       req.folder = result;
       next();
+    } else {
+      return res.sendStatus(404);
     }
   })
   .catch(() => {

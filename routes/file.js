@@ -21,27 +21,35 @@ var storage = multer.diskStorage({
 })
 var upload = multer({ storage: storage, limits: { fileSize: 1024 * 1024 *  process.env.MAX_FILE_SIZE } });
 
-const authenticateJWT = (req, res, next) => {
+// check JWT in Authorization header
+const authenticateJWT = (req, res, next) => { 
   const authHeader = req.headers.authorization;
   if (authHeader) {
     const token = authHeader.split(' ')[1];
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
-      if (err) { return res.sendStatus(403); }   
-      else if (user.uuid != req.body.userUuid) { return res.sendStatus(403); }   
-      else { req.user = user; next(); } 
+      if (err) { 
+        return res.sendStatus(403); 
+      } else if (user.uuid != req.body.userUuid) { 
+        return res.sendStatus(403); 
+      } else { 
+        req.user = user; 
+        next();
+      } 
     });
   } else {
     return res.sendStatus(401);
   }
 };
 
+// parse url params to be in request body
 const parsePreUpload = async (req, res, next) => {
   req.body = req.params;
   req.file = { size: parseInt(req.headers['content-length']) };
   next();
 }
 
-const checkDrive = async (req, res, next) => {
+// Check whether a drive with uuid specified in request exists
+const checkDrive = async (req, res, next) => { 
   console.log('checkDrive');
   await prisma.drive.findUnique({
     where: {
@@ -49,8 +57,12 @@ const checkDrive = async (req, res, next) => {
     }
   })
   .then(result => {
-    req.drive = result;
-    next();
+    if (result) {
+      req.drive = result;
+      next();
+    } else {
+      return res.sendStatus(404);
+    }
   })
   .catch(() => {
     return res.sendStatus(404);
@@ -66,9 +78,14 @@ const checkDriveSpace = async (req, res, next) => {
   }
 };
 
+// Check whether a parent folder with uuid specified in request exists
 const checkParentFolder = async (req, res, next) => {
   console.log('checkParentFolder');
-  if (req.body.parentUuid === 'home') {
+  if (req.body.parentUuid == 'home') {
+    req.body.absolutePath = '/home'
+    next();
+  } else if (req.body.parentUuid == 'trash') {
+    req.body.absolutePath = '/trash'
     next();
   } else if (req.body.parentUuid) {
     await prisma.folder.findUnique({
@@ -78,7 +95,10 @@ const checkParentFolder = async (req, res, next) => {
     })
     .then(result => {
       if (result) {
+        req.body.absolutePath = result.absolutePath;
         next();
+      } else {
+        return res.sendStatus(404);
       }
     })
     .catch(() => {
@@ -87,6 +107,7 @@ const checkParentFolder = async (req, res, next) => {
   }
 };
 
+// Check whether the edited file with uuid specified in request exists. If it does, save it's data to request
 const checkFile = async (req, res, next) => {
   console.log('checkFile');
   await prisma.file.findUnique({
@@ -98,6 +119,8 @@ const checkFile = async (req, res, next) => {
     if (result) {
       req.file = result;
       next();
+    } else {
+      return res.sendStatus(404);
     }
   })
   .catch(() => {
