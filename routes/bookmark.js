@@ -28,31 +28,7 @@ const authenticateJWT = (req, res, next) => {
   }
 };
 
-
-const checkFolder = async (req, res, next) => {
-  console.log('checkParentFolder');
-  if (req.body.folderUuid == 'home') {
-    next();
-  } else if (req.body.folderUuid == 'trash') {
-    next();
-  } else if (req.body.folderUuid) {
-    await prisma.folder.findUnique({
-      where: {
-        uuid: req.body.folderUuid,
-      }
-    })
-    .then(result => {
-      if (result) {
-        next();
-      }
-    })
-    .catch(() => {
-      return res.sendStatus(404);
-    })
-  }
-};
-
-router.post('/bookmark/create', authenticateJWT, checkFolder, async function(req, res, next) {
+router.post('/bookmark/create', authenticateJWT, async function(req, res, next) {
   await prisma.bookmark.create({
     data: {
       ownerUuid: req.body.userUuid,
@@ -62,8 +38,7 @@ router.post('/bookmark/create', authenticateJWT, checkFolder, async function(req
   .then(() => {
     return res.sendStatus(201);
   })
-  .catch((e) => {
-    console.log(e)
+  .catch(() => {
     return res.sendStatus(404);
   })
 });  
