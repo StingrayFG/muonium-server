@@ -135,8 +135,9 @@ router.post('/folder/create', authenticateJWT, checkDrive, checkParentFolder, as
 });
 
 router.post('/folder/get/uuid', authenticateJWT, checkDrive, checkParentFolder, async function(req, res, next) {
-  let folder = { files: [], folders: [], uuid: req.body.parentUuid, absolutePath: req.body.absolutePath };
-  if (req.body.parentUuid === 'trash') {
+
+  const findChildren = async () => {
+    let folder = { files: [], folders: [], uuid: req.body.parentUuid, absolutePath: req.body.absolutePath };
     await Promise.all([
       folder.files = await prisma.file.findMany({
         orderBy: [
@@ -162,19 +163,21 @@ router.post('/folder/get/uuid', authenticateJWT, checkDrive, checkParentFolder, 
       }),
     ])
     .then(() => {
-      folder.files.forEach(file => {
-        file.name = path.parse(file.name).name;
-        file.type = 'file';
-      });
-      folder.folders.forEach(folder => {
-        folder.type = 'folder';
-      });
+      for (let folder of folder.folders) { 
+        folder = { ...folder, type : 'folder' };
+      }
+      for (let file of folder.files) { 
+        file = { ...file, name: path.parse(file.name).name, type: 'file' };
+      }
       return res.send(folder);
     }) 
     .catch(() => {
       return res.sendStatus(404);
     }) 
-  } else if (req.body.parentUuid) {
+  }
+
+  const findRemoved = async () => {
+    let folder = { files: [], folders: [], uuid: req.body.parentUuid, absolutePath: req.body.absolutePath };
     await Promise.all([
       folder.files = await prisma.file.findMany({
         orderBy: [
@@ -202,18 +205,23 @@ router.post('/folder/get/uuid', authenticateJWT, checkDrive, checkParentFolder, 
       }),
     ])
     .then(() => {
-      folder.files.forEach(file => {
-        file.name = path.parse(file.name).name;
-        file.type = 'file';
-      });
-      folder.folders.forEach(folder => {
-        folder.type = 'folder';
-      });
+      for (let folder of folder.folders) { 
+        folder = { ...folder, type : 'folder' };
+      }
+      for (let file of folder.files) { 
+        file = { ...file, name: path.parse(file.name).name, type: 'file' };
+      }
       return res.send(folder);
     })   
     .catch(() => {
       return res.sendStatus(404);
     }) 
+  }
+
+  if (req.body.parentUuid === 'trash') {
+    findRemoved();
+  } else if (req.body.parentUuid) {
+    findChildren();
   } else {
     return res.sendStatus(404);
   }
