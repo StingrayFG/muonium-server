@@ -136,46 +136,6 @@ router.post('/folder/create', authenticateJWT, checkDrive, checkParentFolder, as
 
 router.post('/folder/get/uuid', authenticateJWT, checkDrive, checkParentFolder, async function(req, res, next) {
 
-  const findChildren = async () => {
-    let folder = { files: [], folders: [], uuid: req.body.parentUuid, absolutePath: req.body.absolutePath };
-    await Promise.all([
-      folder.files = await prisma.file.findMany({
-        orderBy: [
-          {
-            name: 'asc',
-          },
-        ],
-        where: {
-          ownerUuid: req.body.userUuid,
-          isRemoved: true,
-        },
-      }),
-      folder.folders = await prisma.folder.findMany({
-        orderBy: [
-          {
-            name: 'asc',
-          },
-        ],
-        where: {
-          ownerUuid: req.body.userUuid,
-          isRemoved: true,
-        },
-      }),
-    ])
-    .then(() => {
-      for (let folder of folder.folders) { 
-        folder = { ...folder, type : 'folder' };
-      }
-      for (let file of folder.files) { 
-        file = { ...file, name: path.parse(file.name).name, type: 'file' };
-      }
-      return res.send(folder);
-    }) 
-    .catch(() => {
-      return res.sendStatus(404);
-    }) 
-  }
-
   const findRemoved = async () => {
     let folder = { files: [], folders: [], uuid: req.body.parentUuid, absolutePath: req.body.absolutePath };
     await Promise.all([
@@ -186,6 +146,47 @@ router.post('/folder/get/uuid', authenticateJWT, checkDrive, checkParentFolder, 
           },
         ],
         where: {
+          ownerUuid: req.body.userUuid,
+          isRemoved: true,
+        },
+      }),
+      folder.folders = await prisma.folder.findMany({
+        orderBy: [
+          {
+            name: 'asc',
+          },
+        ],
+        where: {
+          ownerUuid: req.body.userUuid,
+          isRemoved: true,
+        },
+      }),
+    ])
+    .then(() => {
+      for (let f of folder.folders) { 
+        f.type = 'folder';
+      }
+      for (let f of folder.files) { 
+        f.type = 'file';
+        f.name = path.parse(f.name).name;
+      }
+      return res.send(folder);
+    }) 
+    .catch(() => {
+      return res.sendStatus(404);
+    }) 
+  }
+
+  const findChildren = async () => {
+    let folder = { files: [], folders: [], uuid: req.body.parentUuid, absolutePath: req.body.absolutePath };
+    await Promise.all([
+      folder.files = await prisma.file.findMany({
+        orderBy: [
+          {
+            name: 'asc',
+          },
+        ],
+        where: {
           parentUuid: req.body.parentUuid,
           ownerUuid: req.body.userUuid,
           isRemoved: false,
@@ -205,15 +206,17 @@ router.post('/folder/get/uuid', authenticateJWT, checkDrive, checkParentFolder, 
       }),
     ])
     .then(() => {
-      for (let folder of folder.folders) { 
-        folder = { ...folder, type : 'folder' };
+      for (let f of folder.folders) { 
+        f.type = 'folder';
       }
-      for (let file of folder.files) { 
-        file = { ...file, name: path.parse(file.name).name, type: 'file' };
+      for (let f of folder.files) { 
+        f.type = 'file';
+        f.name = path.parse(f.name).name;
       }
       return res.send(folder);
     })   
-    .catch(() => {
+    .catch((e) => {
+      console.log(e)
       return res.sendStatus(404);
     }) 
   }
@@ -426,7 +429,8 @@ router.put('/folder/remove', authenticateJWT, checkDrive, checkFolder, async fun
 
 // Set folder with the given uuid and all it's children's field 'isRemoved' to false
 router.put('/folder/recover', authenticateJWT, checkDrive, checkFolder, async function(req, res, next) {
-  await prisma.folder.update({
+  console.log(req.folder)
+  await prisma.folder.updateMany({
     where: {
       absolutePath: {
         startsWith: req.folder.absolutePath,
