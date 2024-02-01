@@ -54,13 +54,16 @@ router.post('/bookmark/get', authenticateJWT, async function(req, res, next) {
     for await (let bookmark of result) {
       await prisma.folder.findUnique({
         where: {
-          uuid: bookmark.folderUuid
+          uuid: bookmark.folderUuid,
+          isRemoved: false,
         },
       })    
       .then(result => {
-        bookmark.uuid = bookmark.ownerUuid + bookmark.folderUuid;
-        bookmark.folder = result;
-        bookmarks.push(bookmark)
+        if (result) {
+          bookmark.uuid = bookmark.ownerUuid + bookmark.folderUuid;
+          bookmark.folder = result;
+          bookmarks.push(bookmark)
+        }
       })
     }
     return res.send(bookmarks);

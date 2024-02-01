@@ -159,6 +159,7 @@ router.post('/folder/get/uuid', authenticateJWT, checkDrive, checkParentFolder, 
         where: {
           ownerUuid: req.body.userUuid,
           isRemoved: true,
+          isRemovedAsChild: false,
         },
       }),
     ])
@@ -408,20 +409,35 @@ router.put('/folder/move', authenticateJWT, checkDrive, checkFolder, async funct
 
 // Set folder with the given uuid and all it's children's field 'isRemoved' to true
 router.put('/folder/remove', authenticateJWT, checkDrive, checkFolder, async function(req, res, next) {
-  await prisma.folder.updateMany({
-    where: {
-      absolutePath: {
-        startsWith: req.folder.absolutePath,
+  await Promise.all([
+    await prisma.folder.update({
+      where: {
+        uuid: req.folder.uuid,
       },
-    },
-    data: {
-      isRemoved: true,
-    }
-  })
+      data: {
+        isRemoved: true,
+      }
+    }),
+    await prisma.folder.updateMany({
+      where: {
+        NOT: {
+          uuid: req.folder.uuid,
+        },
+        absolutePath: {
+          startsWith: req.folder.absolutePath,
+        },
+      },
+      data: {
+        isRemoved: true,
+        isRemovedAsChild: true,
+      }
+    })
+  ])
   .then(() => {
     return res.sendStatus(200);
   })
-  .catch(() => {
+  .catch((e) => {
+    console.log(e)
     return res.sendStatus(404);
   })
 });
