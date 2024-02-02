@@ -28,6 +28,7 @@ const authenticateJWT = (req, res, next) => {
   }
 };
 
+
 router.post('/bookmark/create', authenticateJWT, async function(req, res, next) {
   await prisma.bookmark.create({
     data: {
@@ -39,7 +40,7 @@ router.post('/bookmark/create', authenticateJWT, async function(req, res, next) 
     return res.sendStatus(201);
   })
   .catch(() => {
-    return res.sendStatus(404);
+    return res.sendStatus(500);
   })
 });  
 
@@ -51,14 +52,14 @@ router.post('/bookmark/get', authenticateJWT, async function(req, res, next) {
   })
   .then(async result => {
     let bookmarks = []
-    for await (let bookmark of result) {
+    for await (let bookmark of result) { // Find the bookmarked folder
       await prisma.folder.findUnique({
         where: {
           uuid: bookmark.folderUuid,
           isRemoved: false,
         },
       })    
-      .then(result => {
+      .then(result => { // If its found, add the related bookmark to the response
         if (result) {
           bookmark.uuid = bookmark.ownerUuid + bookmark.folderUuid;
           bookmark.folder = result;
@@ -83,7 +84,7 @@ router.post('/bookmark/delete', authenticateJWT, async function(req, res, next) 
     },
   })
   .then(() => {
-    return res.sendStatus(200);
+    return res.sendStatus(204);
   })
   .catch(() => {
     return res.sendStatus(404);

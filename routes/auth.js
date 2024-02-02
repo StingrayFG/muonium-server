@@ -81,12 +81,11 @@ router.post('/auth/login', async function(req, res, next) {
         }  
       })
       .catch(() => {
-        return res.sendStatus(404)
+        return res.sendStatus(500)
       })  
     } catch (e) {
-      return res.sendStatus(423);
+      return res.sendStatus(500);
     }
-    
   } else {
     return res.sendStatus(423);
   }
@@ -131,9 +130,8 @@ router.post('/auth/signup', async function(req, res, next) {
         return res.sendStatus(409)
       })
     } catch (e) {
-      return res.sendStatus(423);
-    }
-    
+      return res.sendStatus(500);
+    }   
   } else {
     return res.sendStatus(423);
   }
