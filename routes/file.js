@@ -65,7 +65,7 @@ const checkDrive = async (req, res, next) => {
     }
   })
   .catch(() => {
-    return res.sendStatus(404);
+    return res.sendStatus(500);
   })
 };
 
@@ -102,7 +102,7 @@ const checkParentFolder = async (req, res, next) => {
       }
     })
     .catch(() => {
-      return res.sendStatus(404);
+      return res.sendStatus(500);
     })
   }
 };
@@ -124,7 +124,7 @@ const checkFile = async (req, res, next) => {
     }
   })
   .catch(() => {
-    return res.sendStatus(404);
+    return res.sendStatus(500);
   })
 };
 
@@ -154,11 +154,11 @@ checkDrive, checkDriveSpace, checkParentFolder, upload.single('file'), async fun
       return res.sendStatus(201);
     })
     .catch(() => {
-      return res.sendStatus(404);
+      return res.sendStatus(500);
     })
   ) 
   .catch(() => {
-    return res.sendStatus(404);
+    return res.sendStatus(500);
   }) 
 });
 
@@ -187,7 +187,7 @@ router.get('/file/download/:uuid/:token', async function(req, res, next) {
         }
       })
       .catch(() => {
-        return res.sendStatus(404);
+        return res.sendStatus(500);
       })
     } 
   });
@@ -198,7 +198,7 @@ router.put('/file/rename', authenticateJWT, checkDrive, checkFile, async functio
 
   fs.rename('uploads/' + req.file.name, 'uploads/' +  req.body.fileName + '.' + modificationDate, async (err) => {
     if (err) {
-      return res.sendStatus(404);
+      return res.sendStatus(500);
     } else {
       await prisma.file.update({
         where: {
@@ -210,10 +210,10 @@ router.put('/file/rename', authenticateJWT, checkDrive, checkFile, async functio
         },
       })
       .then(() => {
-        return res.sendStatus(200);
+        return res.sendStatus(204);
       })
       .catch(() => {
-        return res.sendStatus(404);
+        return res.sendStatus(500);
       })
     }
   })
@@ -242,7 +242,7 @@ router.put('/file/copy', authenticateJWT, checkDrive, checkFile, async function(
 
   fs.copyFile('uploads/' + originalFullName, 'uploads/' + copiedFile.name, async (err) => {
     if (err) {
-      return res.sendStatus(404);
+      return res.sendStatus(500);
     } else {
       await prisma.file.create({
         data: copiedFile,
@@ -260,11 +260,11 @@ router.put('/file/copy', authenticateJWT, checkDrive, checkFile, async function(
           return res.sendStatus(201);
         })
         .catch(() => {
-          return res.sendStatus(404);
+          return res.sendStatus(500);
         })
       })  
       .catch(() => {
-        return res.sendStatus(404);
+        return res.sendStatus(500);
       })  
     }
   });
@@ -280,10 +280,10 @@ router.put('/file/move', authenticateJWT, checkDrive, checkFile, async function(
     },
   })
   .then(() => {
-    return res.sendStatus(200);
+    return res.sendStatus(204);
   })
   .catch(() => {
-    return res.sendStatus(404);
+    return res.sendStatus(500);
   })
 });
 
@@ -297,10 +297,10 @@ router.put('/file/remove', authenticateJWT, checkDrive, checkFile, async functio
     },
   })
   .then(() => {
-    return res.sendStatus(200);
+    return res.sendStatus(204);
   })
   .catch(() => {
-    return res.sendStatus(404);
+    return res.sendStatus(500);
   })
 });
 
@@ -314,10 +314,10 @@ router.put('/file/recover', authenticateJWT, checkDrive, checkFile, async functi
     },
   })
   .then(() => {
-    return res.sendStatus(200);
+    return res.sendStatus(204);
   })
   .catch(() => {
-    return res.sendStatus(404);
+    return res.sendStatus(500);
   })
 });
 
@@ -341,14 +341,14 @@ router.post('/file/delete', authenticateJWT, checkDrive, checkFile, async functi
           },
         })
         .then(() => {
-          return res.sendStatus(200)
+          return res.sendStatus(204);
         })
         .catch(() => {
-          return res.sendStatus(404);
+          return res.sendStatus(500);
         })
       ) 
       .catch(() => {
-        return res.sendStatus(404);
+        return res.sendStatus(500);
       }) 
     }
   });

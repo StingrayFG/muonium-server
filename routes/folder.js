@@ -58,7 +58,7 @@ const checkDrive = async (req, res, next) => {
     }
   })
   .catch(() => {
-    return res.sendStatus(404);
+    return res.sendStatus(500);
   })
 };
 
@@ -86,7 +86,7 @@ const checkParentFolder = async (req, res, next) => {
       }
     })
     .catch(() => {
-      return res.sendStatus(404);
+      return res.sendStatus(500);
     })
   }
 };
@@ -108,7 +108,7 @@ const checkFolder = async (req, res, next) => {
     }
   })
   .catch(() => {
-    return res.sendStatus(404);
+    return res.sendStatus(500);
   })
 };
 
@@ -130,7 +130,7 @@ router.post('/folder/create', authenticateJWT, checkDrive, checkParentFolder, as
     return res.sendStatus(201);
   }) 
   .catch(() => {
-    return res.sendStatus(404);
+    return res.sendStatus(500);
   }) 
 });
 
@@ -173,7 +173,7 @@ router.post('/folder/get/uuid', authenticateJWT, checkDrive, checkParentFolder, 
       return res.send(folder);
     }) 
     .catch(() => {
-      return res.sendStatus(404);
+      return res.sendStatus(500);
     }) 
   }
 
@@ -216,7 +216,7 @@ router.post('/folder/get/uuid', authenticateJWT, checkDrive, checkParentFolder, 
       return res.send(folder);
     })   
     .catch(() => {
-      return res.sendStatus(404);
+      return res.sendStatus(500);
     }) 
   }
 
@@ -249,7 +249,7 @@ router.post('/folder/get/path', authenticateJWT, checkDrive, async function(req,
       return res.send({ uuid: result.uuid });
     })
     .catch(() => {
-      return res.sendStatus(404);
+      return res.sendStatus(500);
     }) 
   } else {
     return res.sendStatus(404);
@@ -337,10 +337,10 @@ router.put('/folder/rename', authenticateJWT, checkDrive, checkFolder, async fun
     await updateChildren();
   })
   .then(() => {
-    return res.sendStatus(200);     
+    return res.sendStatus(204);     
   })
   .catch(() => {
-    return res.sendStatus(404);
+    return res.sendStatus(500);
   })  
 });
 
@@ -455,17 +455,17 @@ router.put('/folder/move', authenticateJWT, checkDrive, checkFolder, async funct
     await updateChildren();
   })
   .then(() => {
-    return res.sendStatus(200);     
+    return res.sendStatus(204);     
   })
   .catch(() => {
-    return res.sendStatus(404);
+    return res.sendStatus(500);
   })  
 });
 
 // Set folder with the given uuid and all it's children's field 'isRemoved' to true
 router.put('/folder/remove', authenticateJWT, checkDrive, checkFolder, async function(req, res, next) {
   await Promise.all([
-    await prisma.folder.update({
+    await prisma.folder.update({ // Set removed folder as removed
       where: {
         uuid: req.folder.uuid,
       },
@@ -473,7 +473,7 @@ router.put('/folder/remove', authenticateJWT, checkDrive, checkFolder, async fun
         isRemoved: true,
       }
     }),
-    await prisma.folder.updateMany({
+    await prisma.folder.updateMany({ // Set removed folder's children as removed
       where: {
         NOT: {
           uuid: req.folder.uuid,
@@ -489,7 +489,7 @@ router.put('/folder/remove', authenticateJWT, checkDrive, checkFolder, async fun
     })
   ])
   .then(() => {
-    return res.sendStatus(200);
+    return res.sendStatus(204);
   })
   .catch(() => {
     return res.sendStatus(404);
@@ -506,10 +506,11 @@ router.put('/folder/recover', authenticateJWT, checkDrive, checkFolder, async fu
     },
     data: {
       isRemoved: false,
+      isRemovedAsChild: false,
     },
   })
   .then(() => {
-    return res.sendStatus(200);
+    return res.sendStatus(204);
   })
   .catch(() => {
     return res.sendStatus(404);
@@ -527,17 +528,14 @@ router.post('/folder/delete', authenticateJWT, checkDrive, checkFolder, async fu
 
   // Delete a file from disk
   const deleteFile = async (file) => {
-    fs.unlink('uploads/' + file.name, async (err) => {
-      if (err) {
-        return res.sendStatus(404);
-      } else {  
-        await prisma.file.delete({
-          where: {
-            uuid: file.uuid,
-          },
-        })
-      }
-    });
+    fs.unlink('uploads/' + file.name);
+    try {
+      await prisma.file.delete({
+        where: {
+          uuid: file.uuid,
+        },
+      })
+    } catch {}
   }
 
   // Delete files with the given parent uuids and update drive's used space
@@ -666,10 +664,10 @@ router.post('/folder/delete', authenticateJWT, checkDrive, checkFolder, async fu
     deleteChildren();
   })
   .then(() => {
-    return res.sendStatus(200);     
+    return res.sendStatus(204);     
   })
   .catch(() => {
-    return res.sendStatus(404);
+    return res.sendStatus(500);
   })  
 });
   
