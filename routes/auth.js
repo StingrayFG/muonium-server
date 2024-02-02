@@ -8,19 +8,19 @@ var router = express.Router();
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 
-//const redis = require('redis');
-//const client = redis.createClient();
-//client.connect();
+const redis = require('redis');
+const client = redis.createClient(process.env.REDIS_PORT, process.env.REDIS_HOST);
+client.connect();
 
 // Handle login
 router.post('/auth/login', async function(req, res, next) {
   // Search for a login attempt from request's origin ip record 
-  //const loginAttempt = await client.get(req.headers['x-forwarded-for'] + '-login'); 
-  const loginAttempt = false; //
+  const loginAttempt = await client.get(req.headers['x-forwarded-for'] + '-login'); 
+
   if (!loginAttempt) {
     // Create a new redis record with ttl=30s to limit login requests to one per 30s
-    //client.set(req.headers['x-forwarded-for'] + '-login', ' ');
-    //client.expire(req.headers['x-forwarded-for'] + '-login', 10); 
+    client.set(req.headers['x-forwarded-for'] + '-login', ' ');
+    client.expire(req.headers['x-forwarded-for'] + '-login', 10); 
 
     try {
       let user;
@@ -81,9 +81,9 @@ router.post('/auth/login', async function(req, res, next) {
         }  
       })
       .catch(() => {
-        return res.sendStatus(500)
+        return res.sendStatus(404)
       })  
-    } catch (e) {
+    } catch {
       return res.sendStatus(500);
     }
   } else {
@@ -93,8 +93,8 @@ router.post('/auth/login', async function(req, res, next) {
 
 router.post('/auth/signup', async function(req, res, next) {
   // Search for a signup attempt from request's origin ip record 
-  //const signupAttempt = await client.get(req.headers['x-forwarded-for'] + '-signup'); 
-  const signupAttempt = false;
+  const signupAttempt = await client.get(req.headers['x-forwarded-for'] + '-signup'); 
+
   if (!signupAttempt) {
     let userUuid = crypto.randomUUID();
 
@@ -121,15 +121,15 @@ router.post('/auth/signup', async function(req, res, next) {
       ])
       .then(() => {
         // If a new account has been created successfully, create a new redis record with ttl=1h to limit signup requests to one per hour
-        //client.set(req.headers['x-forwarded-for'] + '-signup', ' ');
-        //client.expire(req.headers['x-forwarded-for'] + '-signup', 3600);
+        client.set(req.headers['x-forwarded-for'] + '-signup', ' ');
+        client.expire(req.headers['x-forwarded-for'] + '-signup', 3600);
   
         return res.sendStatus(201)
       })
       .catch(() => {
         return res.sendStatus(409)
       })
-    } catch (e) {
+    } catch {
       return res.sendStatus(500);
     }   
   } else {
