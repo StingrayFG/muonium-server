@@ -63,6 +63,7 @@ router.post('/bookmark/get', authenticateJWT, async function(req, res, next) {
         if (result) {
           bookmark.uuid = bookmark.ownerUuid + bookmark.folderUuid;
           bookmark.folder = result;
+          bookmark.type = 'bookmark'
           bookmarks.push(bookmark)
         }
       })
