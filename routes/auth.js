@@ -9,13 +9,16 @@ const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 
 const redis = require('redis');
-const client = redis.createClient(process.env.REDIS_PORT, process.env.REDIS_HOST);
-client.connect();
+const client = redis.createClient({
+  url: process.env.REDIS_URL,
+})
+client.connect().catch(console.error)
 
 // Handle login
 router.post('/auth/login', async function(req, res, next) {
   // Search for a login attempt from request's origin ip record 
   const loginAttempt = await client.get(req.headers['x-forwarded-for'] + '-login'); 
+  console.log(loginAttempt)
 
   if (!loginAttempt) {
     // Create a new redis record with ttl=30s to limit login requests to one per 30s
