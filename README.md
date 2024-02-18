@@ -4,7 +4,7 @@ Muonium is a cloud storage project built with React + Redux, TailwindCSS, Expres
 
 ### Real world example
 
-See the real world example at [https://h2cloud.space](https://muoniumdrive.com/)
+See the real world example at https://muoniumdrive.com
 
 # Features
 
