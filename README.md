@@ -23,4 +23,4 @@ See the real world example at https://muoniumdrive.com
 - Extended list view (with date, size, type etc columns)
 
 # 
-More information can be found in the main repo, https://github.com/StingrayFG/muonium-frontend/edit/main/README.md
+More information can be found in the main repo, https://github.com/StingrayFG/muonium-frontend/
