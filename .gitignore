@@ -9,3 +9,4 @@ prisma/.env
 .env
 *.toml
 *.sql
+package-lock.json
