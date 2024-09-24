@@ -1,41 +1,36 @@
-var createError = require('http-errors');
-var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
-var cors = require('cors')
+const express = require('express');
+const cors = require('cors');
+const morgan = require('morgan');
+const cookieParser = require('cookie-parser');
 
-//var indexRouter = require('./routes/index');
-var authRouter = require('./routes/auth');
-var driveRouter = require('./routes/drive');
-var bookmarkRouter = require('./routes/bookmark');
-var fileRouter = require('./routes/file');
-var folderRouter = require('./routes/folder');
+const authRouter = require('./routes/auth');
+const driveRouter = require('./routes/drive');
+const bookmarkRouter = require('./routes/bookmark');
+const fileRouter = require('./routes/file');
+const folderRouter = require('./routes/folder');
 
-var app = express();
+require('dotenv').config()
 
-app.use(cors({
-  origin: [,
-    'http://localhost:3000',
-    'http://muonium-frontend:3000'
-  ]
-}))
+const app = express();
 
-// view engine setup
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'jade');
+app.use(cors({ 
+  cors: {
+    origin: [
+      process.env.CLIENT_URL,
+      process.env.ADDITIONAL_CORS_URL,
+    ]
+  }
+}));
 
-app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use(morgan('tiny'));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
 
-//app.use('/', indexRouter);
-app.use('/', authRouter);
-app.use('/', driveRouter);
-app.use('/', bookmarkRouter);
-app.use('/', fileRouter);
-app.use('/', folderRouter);
+app.use('/auth/', authRouter);
+app.use('/drive/', driveRouter);
+app.use('/bookmark', bookmarkRouter);
+app.use('/file/', fileRouter);
+app.use('/folder/', folderRouter);
 
 module.exports = app;
