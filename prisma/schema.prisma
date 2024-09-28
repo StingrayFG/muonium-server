@@ -32,6 +32,7 @@ model bookmark {
 
 model file {
   name              String
+  nameExtension     String
   size              Int
 
   creationDate      DateTime? @db.Timestamptz(3)  @default(dbgenerated("NOW()")) 

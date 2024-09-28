@@ -22,7 +22,8 @@ const userService = {
           reject();
         }
       })
-      .catch(() => {
+      .catch(err => {
+        console.log(err);
         reject();
       })
     })
@@ -44,7 +45,8 @@ const userService = {
       .then(user => {
         resolve(user);
       })
-      .catch(() => {
+      .catch(err => {
+        console.log(err);
         reject();
       })
     })

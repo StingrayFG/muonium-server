@@ -1,12 +1,15 @@
+const crypto = require('crypto');
+
 const prisma = require('../instances/prisma.js')
 
+
 const driveService = {
-  getDrive: async (user) => {
+  getDrive: async (driveData) => {
     return new Promise( async function(resolve, reject) {
-      if (user) {
-        result = await prisma.drive.findFirst({
+      if (driveData.uuid) {
+        await prisma.drive.findUnique({
           where: {
-            ownerUuid: user.uuid,
+            uuid: driveData.uuid,
           }
         })
         .then(drive => {
@@ -16,19 +19,47 @@ const driveService = {
             reject();
           }
         })
-        .catch(() => {
+        .catch(err => {
+          console.log(err);
           reject();
         })
+      } else {
+        reject();
       }
     })
   },
 
-  createDrive: async (user) => {
+  getDriveByUser: async (userData) => {
+    return new Promise( async function(resolve, reject) {
+      if (userData.uuid) {
+        await prisma.drive.findFirst({
+          where: {
+            ownerUuid: userData.uuid,
+          }
+        })
+        .then(drive => {
+          if (drive) {
+            resolve(drive);
+          } else {
+            reject();
+          }
+        })
+        .catch(err => {
+          console.log(err);
+          reject();
+        })
+      } else {
+        reject();
+      }
+    })
+  },
+
+  createDrive: async (userData) => {
     return new Promise(async function(resolve, reject) {
       await prisma.drive.create({
         data: {
           uuid: crypto.randomUUID(),
-          ownerUuid: user.uuid,
+          ownerUuid: userData.uuid,
           spaceTotal: 1024 * 1024 * process.env.NEW_DRIVE_SIZE,
           spaceUsed: 0,
         },
@@ -36,7 +67,28 @@ const driveService = {
       .then(drive => {
         resolve(drive);
       })
-      .catch(() => {
+      .catch(err => {
+        console.log(err);
+        reject();
+      })
+    })
+  },
+
+  updateDriveUsedSpace: async (driveData, usageChange) => {
+    return new Promise(async function(resolve, reject) {
+      await prisma.drive.update({
+        where: {
+          uuid: driveData.uuid,
+        },
+        data: {
+          spaceUsed: { increment: usageChange },
+        },
+      })
+      .then(drive => {
+        resolve(drive);
+      })
+      .catch(err => {
+        console.log(err);
         reject();
       })
     })

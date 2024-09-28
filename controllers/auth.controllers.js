@@ -8,34 +8,6 @@ const driveService = require('../services/drive.service.js')
 const userController = {
 
   login: async (req, res, next) => {
-
-    const getAll = async () => {
-      return new Promise(async function(resolve, reject) {
-        await userService.getUser(req.body.userData)
-        .then(async user => {
-          await driveService.getDrive(user)
-          .then(async drive => {
-            if (user && drive) {
-              resolve({ 
-                userData: {
-                  uuid: user.uuid,
-                  login: user.login,
-                  accessToken: jwt.sign({ uuid: user.uuid }, process.env.ACCESS_TOKEN_SECRET)
-                }, 
-                driveData: {
-                  uuid: drive.uuid
-                }
-              });
-            } else {
-              reject();
-            }  
-          })
-        })
-        .catch(() => {
-          reject();
-        })          
-      })
-    }
     
     const loginAttempt = await redis.get(req.headers['x-forwarded-for'] + '-login'); 
 
@@ -43,26 +15,33 @@ const userController = {
       redis.set(req.headers['x-forwarded-for'] + '-login', ' ');
       redis.expire(req.headers['x-forwarded-for'] + '-login', 3); 
 
-      await getAll()
-      .then(data => {
-        return res.send(data);
+      await userService.getUser(req.body.userData)
+      .then(user => {
+        return res.send({ userData: {
+          uuid: user.uuid,
+          login: user.login,
+          accessToken: jwt.sign({ uuid: user.uuid }, process.env.ACCESS_TOKEN_SECRET)
+        }});
       })
-      .catch(() => {
-        return res.sendStatus(404);
+      .catch(err => {
+        console.log(err);
+        res.statusMessage = 'User not found';
+        return res.status(404).end();
       })
     } else {
-      return res.sendStatus(423);
+      res.statusMessage = 'Too many login attempts';
+      return res.status(423).end();
     }
   },
 
   signup: async (req, res, next) => {
 
-    const createAll = async () => {
+    const createUserAndDrive = async () => {
       return new Promise(async function(resolve, reject) {
         await userService.createUser(req.body.userData)
         .then(async user => {
           await driveService.createDrive(user)
-          .then(async drive => {
+          .then(drive => {
             if (user && drive) {
               resolve();
             } else {
@@ -70,7 +49,8 @@ const userController = {
             }   
           })
         })
-        .catch(() => {
+        .catch(err => {
+          console.log(err);
           reject();
         })
       })
@@ -79,17 +59,20 @@ const userController = {
     const signupAttempt = await redis.get(req.headers['x-forwarded-for'] + '-signup'); 
 
     if (!signupAttempt || process.env.IGNORE_AUTH_LIMIT) {
-      await createAll()
+      await createUserAndDrive()
       .then(() => {
         redis.set(req.headers['x-forwarded-for'] + '-signup', ' ');
         redis.expire(req.headers['x-forwarded-for'] + '-signup', 3600);
         return res.sendStatus(201);
       })
-      .catch(() => {
-        return res.sendStatus(409);
+      .catch(err => {
+        console.log(err);
+        res.statusMessage = 'Username is already used';
+        return res.status(423).end();
       })
     } else {
-      return res.sendStatus(423);
+      res.statusMessage = 'Too many signup attempts';
+      return res.status(423).end();
     }
   }
 }
