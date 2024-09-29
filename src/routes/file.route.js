@@ -6,7 +6,7 @@ const driveMw = require('../middlewares/drive.middleware.js')
 const fileMw = require('../middlewares/file.middleware.js')
 const folderMw = require('../middlewares/folder.middleware.js')
 
-const fileController = require('../controllers/file.controllers.js')
+const fileController = require('../controllers/file.controller.js')
 
 const multer = require('../instances/multer.js')
 

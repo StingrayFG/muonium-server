@@ -4,11 +4,11 @@ const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
 const http = require('http');
 
-const authRouter = require('./routes/auth.routes');
-const driveRouter = require('./routes/drive.routes');
-const bookmarkRouter = require('./routes/bookmark.routes');
-const fileRouter = require('./routes/file.routes');
-const folderRouter = require('./routes/folder.routes');
+const authRouter = require('./routes/auth.route');
+const driveRouter = require('./routes/drive.route');
+const bookmarkRouter = require('./routes/bookmark.route');
+const fileRouter = require('./routes/file.route');
+const folderRouter = require('./routes/folder.route');
 
 require('dotenv').config()
 

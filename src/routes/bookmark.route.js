@@ -3,7 +3,7 @@ const router = express.Router();
 
 const authMw = require('../middlewares/auth.middleware.js')
 
-const bookmarkController = require('../controllers/bookmark.controllers.js')
+const bookmarkController = require('../controllers/bookmark.controller.js')
 
 
 router.post('/get', authMw.authenticateJWT, bookmarkController.getBookmark);
