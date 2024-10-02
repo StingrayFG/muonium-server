@@ -1,3 +1,5 @@
+const fs = require('fs');
+
 const fileService = require('../services/file.service.js')
 const folderService = require('../services/folder.service.js')
 
@@ -11,6 +13,55 @@ const fileMiddleware = {
     };
     next();
   },
+
+  parseBodyPostUpload: async (req, res, next) => {
+    req.body.fileData = {
+      name: req.file.originalname,
+      nameExtension: req.file.nameExtension + '',
+      size: req.file.size,
+
+      ownerUuid: req.params.userUuid,
+      parentUuid: req.params.parentUuid,
+      driveUuid: req.params.driveUuid,
+    }
+    next();
+  },
+
+  checkIfNameIsUsed: async (req, res, next) => {
+    await fileService.checkIfNameIsAlreadyUsed(req.body.fileData)
+    .then(isUsed => {
+      if (isUsed) {
+        return res.sendStatus(409);
+      } else {
+        next();
+      }
+    })
+    .catch(err => {
+      console.log(err);
+      return res.sendStatus(500);
+    })
+  },
+
+  checkIfNameIsUsedPostUpload: async (req, res, next) => {
+    await fileService.checkIfNameIsAlreadyUsed(req.body.fileData)
+    .then(isUsed => {
+      if (isUsed) {
+        fs.unlink('uploads/' + req.body.fileData.name + '.' + req.body.fileData.nameExtension, async (err) => {
+          if (err) {
+            console.log(err);
+          }
+        })
+        return res.sendStatus(409);
+      } else {
+        next();
+      }
+    })
+    .catch(err => {
+      console.log(err);
+      return res.sendStatus(500);
+    })
+  },
+
 
   checkFile: async (req, res, next) => {
     await fileService.getFile(req.body.fileData)

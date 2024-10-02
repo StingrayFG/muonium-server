@@ -4,6 +4,28 @@ const prisma = require('../instances/prisma.js')
 
 
 const folderService = {
+
+  checkIfNameIsAlreadyUsed: async (folderData) => {
+    return new Promise(async function(resolve, reject) {
+      await prisma.folder.findFirst({
+        where: {
+          name: folderData.name,
+          parentUuid: folderData.parentUuid
+        },
+      })
+      .then(folder => {
+        if (folder) {
+          resolve(true);
+        } else {
+          resolve(false);
+        }
+      })
+      .catch(err => {
+        reject();
+      })
+    })
+  },
+
   getParentFolder: async (childData) => {
     return new Promise(async function(resolve, reject) {
       await prisma.folder.findUnique({
@@ -241,8 +263,8 @@ const folderService = {
           uuid: { in: folderUuids }
         },
       })
-      .then(file => {
-        resolve(file);
+      .then(folder => {
+        resolve(folder);
       })
       .catch(err => {
         console.log(err);

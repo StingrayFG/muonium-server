@@ -2,6 +2,22 @@ const folderService = require('../services/folder.service.js')
 
 
 const folderMiddleware = {
+
+  checkIfNameIsUsed: async (req, res, next) => {
+    await folderService.checkIfNameIsAlreadyUsed(req.body.folderData)
+    .then(isUsed => {
+      if (isUsed) {
+        return res.sendStatus(409);
+      } else {
+        next();
+      }
+    })
+    .catch(err => {
+      console.log(err);
+      return res.sendStatus(500);
+    })
+  },
+
   checkFolderUuid: async (req, res, next) => {
     if (req.body.folderData.uuid === 'home') {
       req.folder = { uuid: 'home', absolutePath: '/home'}

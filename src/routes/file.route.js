@@ -16,17 +16,17 @@ router.post('/download', authMw.authenticateJWT, driveMw.checkDrive, fileMw.chec
 router.get('/download/:uuid/:token', fileController.downloadFile);
 
 router.post('/upload/:userUuid/:driveUuid/:parentUuid', fileMw.parseBodyPreUpload, authMw.authenticateJWT, driveMw.checkDrive, 
-driveMw.checkDriveSpace, fileMw.checkParentFolder, multer.single('file'), fileController.uploadFile);
+driveMw.checkDriveSpace, fileMw.checkParentFolder, multer.single('file'), fileMw.parseBodyPostUpload, fileMw.checkIfNameIsUsedPostUpload, fileController.uploadFile);
 
 router.post('/copy', authMw.authenticateJWT, driveMw.checkDrive, fileMw.checkParentFolder, fileMw.checkFile, fileController.copyFile)
 
-router.put('/rename', authMw.authenticateJWT, driveMw.checkDrive, fileMw.checkFile, fileController.renameFile)
+router.put('/rename', authMw.authenticateJWT, driveMw.checkDrive, fileMw.checkFile, fileMw.checkIfNameIsUsed, fileController.renameFile)
 
-router.put('/move', authMw.authenticateJWT, driveMw.checkDrive, fileMw.checkParentFolder, fileMw.checkFile, fileController.moveFile)
+router.put('/move', authMw.authenticateJWT, driveMw.checkDrive, fileMw.checkParentFolder, fileMw.checkIfNameIsUsed, fileMw.checkFile, fileController.moveFile)
 
 router.put('/remove', authMw.authenticateJWT, driveMw.checkDrive, fileMw.checkFile, fileController.removeFile)
 
-router.put('/recover', authMw.authenticateJWT, driveMw.checkDrive, fileMw.checkFile, fileController.recoverFile)
+router.put('/recover', authMw.authenticateJWT, driveMw.checkDrive, fileMw.checkFile, fileMw.checkIfNameIsUsed, fileController.recoverFile)
 
 router.post('/delete', authMw.authenticateJWT, driveMw.checkDrive, fileMw.checkFile, fileController.deleteFile)
 

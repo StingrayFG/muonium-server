@@ -4,6 +4,28 @@ const prisma = require('../instances/prisma.js')
 
 
 const fileService = {
+
+  checkIfNameIsAlreadyUsed: async (fileData) => {
+    return new Promise(async function(resolve, reject) {
+      await prisma.file.findFirst({
+        where: {
+          name: fileData.name,
+          parentUuid: fileData.parentUuid
+        },
+      })
+      .then(file => {
+        if (file) {
+          resolve(true);
+        } else {
+          resolve(false);
+        }
+      })
+      .catch(err => {
+        reject();
+      })
+    })
+  },
+
   getFile: async (fileData) => {
     return new Promise(async function(resolve, reject) {
       await prisma.file.findUnique({

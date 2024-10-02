@@ -42,15 +42,7 @@ const fileController = {
   },
 
   uploadFile: async (req, res, next) => {
-    await fileService.createFile({
-      name: req.file.originalname,
-      nameExtension: req.file.nameExtension + '',
-      size: req.file.size,
-
-      ownerUuid: req.params.userUuid,
-      parentUuid: req.params.parentUuid,
-      driveUuid: req.params.driveUuid,
-    })
+    await fileService.createFile(req.body.fileData)
     .then(async fileData => {
       await driveService.updateDriveUsedSpace(req.drive, req.file.size)
       .then(() => {
@@ -72,7 +64,6 @@ const fileController = {
       return res.sendStatus(409);
     } else {
       req.body.fileData.uuid = crypto.randomUUID();
-      req.body.fileData.name = req.body.fileData.name;
       req.body.fileData.nameExtension = modificationDate + '';
       req.body.fileData.modificationDate = new Date(modificationDate);    
       req.body.fileData.creationDate = new Date(modificationDate);  
