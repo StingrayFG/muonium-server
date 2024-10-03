@@ -3,6 +3,7 @@ const cors = require('cors');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
 const http = require('http');
+const fs = require('fs');
 
 const authRouter = require('./routes/auth.route');
 const driveRouter = require('./routes/drive.route');
@@ -39,6 +40,10 @@ app.use('/folder/', folderRouter);
 const server = http.createServer(app);
 server.listen(process.env.PORT || 4000);
 server.on('error', (err) => { console.log(err) });
+
+
+if (!fs.existsSync('uploads/')) { fs.mkdirSync('uploads/') };
+if (!fs.existsSync('thumbnails/')) { fs.mkdirSync('thumbnails/') };
 
 
 module.exports = app;

@@ -4,7 +4,7 @@ const router = express.Router();
 const authMw = require('../middlewares/auth.middleware.js')
 const driveMw = require('../middlewares/drive.middleware.js')
 const fileMw = require('../middlewares/file.middleware.js')
-const folderMw = require('../middlewares/folder.middleware.js')
+const uploadMw = require('../middlewares/upload.middleware.js')
 
 const fileController = require('../controllers/file.controller.js')
 
@@ -16,7 +16,8 @@ router.post('/download', authMw.authenticateJWT, driveMw.checkDrive, fileMw.chec
 router.get('/download/:uuid/:token', fileController.downloadFile);
 
 router.post('/upload/:userUuid/:driveUuid/:parentUuid', fileMw.parseBodyPreUpload, authMw.authenticateJWT, driveMw.checkDrive, 
-driveMw.checkDriveSpace, fileMw.checkParentFolder, multer.single('file'), fileMw.parseBodyPostUpload, fileMw.checkIfNameIsUsedPostUpload, fileController.uploadFile);
+driveMw.checkDriveSpace, fileMw.checkParentFolder, multer.single('file'), uploadMw.generateThumbnail,
+fileMw.parseBodyPostUpload, fileMw.checkIfNameIsUsedPostUpload, fileController.uploadFile);
 
 router.post('/copy', authMw.authenticateJWT, driveMw.checkDrive, fileMw.checkParentFolder, fileMw.checkFile, fileController.copyFile)
 

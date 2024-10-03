@@ -16,6 +16,7 @@ benchmarks/graphs
 
 #
 uploads
+thumbnails
 migrations
 .env
 

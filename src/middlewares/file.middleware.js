@@ -46,7 +46,12 @@ const fileMiddleware = {
     await fileService.checkIfNameIsAlreadyUsed(req.body.fileData)
     .then(isUsed => {
       if (isUsed) {
-        fs.unlink('uploads/' + req.body.fileData.name + '.' + req.body.fileData.nameExtension, async (err) => {
+        fs.unlink(req.file.path, async (err) => {
+          if (err) {
+            console.log(err);
+          }
+        })
+        fs.unlink('thumbnails/' + req.file.filename, async (err) => {
           if (err) {
             console.log(err);
           }
