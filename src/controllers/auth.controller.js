@@ -68,7 +68,7 @@ const userController = {
       .catch(err => {
         console.log(err);
         res.statusMessage = 'Username is already used';
-        return res.status(423).end();
+        return res.status(409).end();
       })
     } else {
       res.statusMessage = 'Too many signup attempts';
