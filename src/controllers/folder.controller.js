@@ -1,6 +1,10 @@
+const path = require('path');
+const fs = require('fs');
+
 const fileService = require('../services/file.service.js');
 const folderService = require('../services/folder.service.js');
 const bookmarkService = require('../services/bookmark.service.js');
+
 
 const folderController = {
 
@@ -18,6 +22,14 @@ const folderController = {
       filesSearchFunction = () => fileService.getFilesByParent(req.folder, req.drive);
     }
 
+    const getThumbnail = (file) => {
+      return new Promise(async function(resolve, reject) {
+        const image = await fs.promises.readFile('thumbnails/' + file.name + '.' + file.nameExtension, { encoding: 'base64' });
+        file.thumbnail = image
+        resolve(file);
+      })
+    }
+
     await Promise.allSettled([
       await foldersSearchFunction()
       .then(folders => {
@@ -28,7 +40,17 @@ const folderController = {
       }),
 
       await filesSearchFunction()
-      .then(files => {
+      .then(async files => {      
+        await Promise.allSettled(
+          files.map(async file => {
+            const extension = path.parse(file.name).ext.substring(1);
+            if (['png', 'webp', 'jpg', 'jpeg'].includes(extension)) {
+              return getThumbnail(file);
+            } else {
+              return file;
+            }         
+          })
+        )
         folderWithChildren.files = files.map(file => ({ ...file, type: 'file' }))
       })
       .catch(() => {
@@ -79,10 +101,10 @@ const folderController = {
     .then(async folderData => {
       await folderService.getFoldersByPathBeginning(req.folder, req.drive)
       .then(async folders => {
-        folders = folders.map((childFolder) => ({ ...childFolder, absolutePath: getNewAbsolutePath(childFolder) }))
+        folders = folders.map(childFolder => ({ ...childFolder, absolutePath: getNewAbsolutePath(childFolder) }))
 
         await Promise.allSettled(
-          folders.map(async (folder) => {
+          folders.map(async folder => {
             return await folderService.updateFolderPath(folder);
           })
         )
@@ -109,10 +131,10 @@ const folderController = {
     .then(async folderData => {
       await folderService.getFoldersByPathBeginning(req.folder, req.drive)
       .then(async folders => {
-        folders = folders.map((childFolder) => ({ ...childFolder, absolutePath: getNewAbsolutePath(childFolder) }))
+        folders = folders.map(childFolder => ({ ...childFolder, absolutePath: getNewAbsolutePath(childFolder) }))
 
         await Promise.allSettled(
-          folders.map(async (folder) => {
+          folders.map(async folder => {
             return await folderService.updateFolderPath(folder);
           })
         )
@@ -157,9 +179,11 @@ const folderController = {
         await folderService.getFoldersByParent(req.body.folderData)
         .then(async folders => {
           if (folders.length > 0) {
-            await Promise.map(folders, async (folder) => {
-              await findChildren(folder);
-            })
+            await Promise.allSettled(
+              folders.map(async folder => {
+                await findChildren(folder);
+              })
+            )
           }
           foldersToDeleteUuids.concat(folders.map((childFolder) => ( childFolder.uuid )));       
           resolve();
