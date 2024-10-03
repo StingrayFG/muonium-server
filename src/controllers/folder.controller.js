@@ -14,8 +14,8 @@ const folderController = {
       foldersSearchFunction = () => folderService.getRemovedFolders(req.drive);
       filesSearchFunction = () => fileService.getRemovedFiles(req.drive);
     } else {
-      foldersSearchFunction = () => folderService.getFoldersByParent(req.folder);
-      filesSearchFunction = () => fileService.getFilesByParent(req.folder);
+      foldersSearchFunction = () => folderService.getFoldersByParent(req.folder, req.drive);
+      filesSearchFunction = () => fileService.getFilesByParent(req.folder, req.drive);
     }
 
     await Promise.allSettled([

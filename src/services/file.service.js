@@ -47,7 +47,7 @@ const fileService = {
     })
   },
 
-  getFilesByParent: async (parentFolderData) => {
+  getFilesByParent: async (parentFolderData, driveData) => {
     return new Promise(async function(resolve, reject) {
       await prisma.file.findMany({
         orderBy: [
@@ -56,6 +56,7 @@ const fileService = {
           },
         ],
         where: {
+          driveUuid: driveData.uuid,
           parentUuid: parentFolderData.uuid,
           isRemoved: false
         }

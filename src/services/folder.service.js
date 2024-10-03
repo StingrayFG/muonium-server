@@ -90,7 +90,7 @@ const folderService = {
     })
   },
 
-  getFoldersByParent: async (parentFolderData) => {
+  getFoldersByParent: async (parentFolderData, driveData) => {
     return new Promise(async function(resolve, reject) {
       await prisma.folder.findMany({
         orderBy: [
@@ -99,6 +99,7 @@ const folderService = {
           },
         ],
         where: {
+          driveUuid: driveData.uuid,
           parentUuid: parentFolderData.uuid,
           isRemoved: false
         }
