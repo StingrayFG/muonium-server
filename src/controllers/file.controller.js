@@ -160,11 +160,14 @@ const fileController = {
         fs.unlink('uploads/' + req.body.fileData.name + '.' + req.body.fileData.nameExtension, async (err) => {
           if (err) {
             console.log(err);
-            return res.sendStatus(404);
-          } else {
-            return res.send({ fileData });
           }
         })
+        fs.unlink('thumbnails/' + req.body.fileData.name + '.' + req.body.fileData.nameExtension, async (err) => {
+          if (err) {
+            console.log(err);
+          }
+        })
+        return res.send({ fileData });
       })
     }) 
     .catch(err => {

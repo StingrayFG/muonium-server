@@ -7,6 +7,7 @@ const instance = multer({
       cb(null, 'uploads/')
     },
     filename: function (req, file, cb) {
+      file.nameExtension = Date.now();
       cb(null, file.originalname + '.' + Date.now())  
     }
   }), 
