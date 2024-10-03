@@ -10,7 +10,8 @@ const folderService = {
       await prisma.folder.findFirst({
         where: {
           name: folderData.name,
-          parentUuid: folderData.parentUuid
+          parentUuid: folderData.parentUuid,
+          isRemoved: false
         },
       })
       .then(folder => {

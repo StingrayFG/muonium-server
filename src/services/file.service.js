@@ -10,7 +10,8 @@ const fileService = {
       await prisma.file.findFirst({
         where: {
           name: fileData.name,
-          parentUuid: fileData.parentUuid
+          parentUuid: fileData.parentUuid,
+          isRemoved: false,
         },
       })
       .then(file => {
