@@ -35,11 +35,7 @@ const fileService = {
         }
       })
       .then(file => {
-        if (file) {
-          resolve(file);
-        } else {
-          reject();
-        }
+        resolve(file);
       })
       .catch(err => {
         console.log(err);
@@ -63,11 +59,7 @@ const fileService = {
         }
       })
       .then(files => {
-        if (files) {
-          resolve(files);
-        } else {
-          reject();
-        }
+        resolve(files);
       })
       .catch(err => {
         console.log(err);
@@ -90,11 +82,7 @@ const fileService = {
         },
       })
       .then(files => {
-        if (files) {
-          resolve(files);
-        } else {
-          reject();
-        }
+        resolve(files);
       })
       .catch(err => {
         console.log(err);

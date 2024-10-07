@@ -56,11 +56,7 @@ const folderService = {
         }
       })
       .then(folder => {
-        if (folder) {
-          resolve(folder);
-        } else {
-          reject();
-        }
+        resolve(folder);
       })
       .catch(err => {
         console.log(err);
@@ -78,11 +74,7 @@ const folderService = {
         }
       })
       .then(folder => {
-        if (folder) {
-          resolve(folder);
-        } else {
-          reject();
-        }
+        resolve(folder);
       })
       .catch(err => {
         console.log(err);
@@ -106,11 +98,7 @@ const folderService = {
         }
       })
       .then(folders => {
-        if (folders) {
-          resolve(folders);
-        } else {
-          reject();
-        }
+        resolve(folders);
       })
       .catch(err => {
         console.log(err);
@@ -133,11 +121,7 @@ const folderService = {
         },
       })
       .then(folders => {
-        if (folders) {
-          resolve(folders);
-        } else {
-          reject();
-        }
+        resolve(folders);
       })
       .catch(err => {
         console.log(err);
@@ -160,11 +144,7 @@ const folderService = {
         },
       })
       .then(folders => {
-        if (folders) {
-          resolve(folders);
-        } else {
-          reject();
-        }
+        resolve(folders);
       })
       .catch(err => {
         console.log(err);

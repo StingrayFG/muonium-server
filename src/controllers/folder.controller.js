@@ -22,7 +22,7 @@ const folderController = {
       filesSearchFunction = () => fileService.getFilesByParent(req.folder, req.drive);
     }
 
-    const getThumbnail = (file) => {
+    const getThumbnail = async (file) => {
       return new Promise(async function(resolve, reject) {
         const image = await fs.promises.readFile('thumbnails/' + file.name + '.' + file.nameExtension, { encoding: 'base64' });
         file.thumbnail = image
@@ -45,7 +45,7 @@ const folderController = {
           files.map(async file => {
             const extension = path.parse(file.name).ext.substring(1);
             if (['png', 'webp', 'jpg', 'jpeg'].includes(extension)) {
-              return getThumbnail(file);
+              return await getThumbnail(file);
             } else {
               return file;
             }         
