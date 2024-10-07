@@ -80,7 +80,7 @@ const bookmarkController = {
     await bookmarkService.updateBookmarkPosition(req.user, req.body.bookmarkData)
     .then(async bookmarkData => {
       let moveFunction;
-      console.log(req.body.bookmarkData.position, req.bookmark.position)
+
       if (req.body.bookmarkData.position > req.bookmark.position) {
         moveFunction = bookmarkService.moveBookmarksAboveInRange;
       } else {

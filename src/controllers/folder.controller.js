@@ -197,7 +197,6 @@ const folderController = {
 
     await findChildren(req.user, foldersToDeleteUuids)
     .then(async () => {
-      console.log(foldersToDeleteUuids)
       await Promise.allSettled([
         await bookmarkService.deleteBookmarksByFoldersUuids(req.user, foldersToDeleteUuids),
         await fileService.deleteFilesByFoldersUuids(foldersToDeleteUuids),

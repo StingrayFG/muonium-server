@@ -15,7 +15,7 @@ const fileController = {
 
   downloadFile: async (req, res, next) => {
     jwt.verify(req.params.token, process.env.ACCESS_TOKEN_SECRET, async (err, file) => {
-      console.log(err,file)
+      console.log(err, file)
       if (err) { 
         return res.sendStatus(403); 
       } else if (file.uuid != req.params.uuid) { 
