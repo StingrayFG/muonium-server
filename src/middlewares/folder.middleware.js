@@ -39,6 +39,8 @@ const folderMiddleware = {
         console.log(err);
         return res.sendStatus(500);
       })
+    } else {
+      return res.sendStatus(404);
     }
   },
 
