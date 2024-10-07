@@ -5,6 +5,9 @@
   "scripts": {
     "start": "nodemon ./src/app.js"
   },
+  "prisma": {
+    "schema": "src/prisma/schema.prisma"
+  },
   "dependencies": {
     "@prisma/client": "^5.7.1",
     "bcrypt": "^5.1.1",
