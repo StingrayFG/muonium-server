@@ -24,7 +24,8 @@ model drive {
 
 model bookmark {
   ownerUuid         String    
-  folderUuid        String  
+  folderUuid        String 
+  position          Int 
 
   @@id([ownerUuid, folderUuid])
 }
