@@ -176,7 +176,7 @@ const folderController = {
 
     const findChildren = async (folder) => {
       return new Promise(async function(resolve, reject) {
-        await folderService.getFoldersByParent(req.body.folderData)
+        await folderService.getFoldersByParent(req.body.folderData, req.body.driveData)
         .then(async folders => {
           if (folders.length > 0) {
             await Promise.allSettled(
