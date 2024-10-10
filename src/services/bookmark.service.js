@@ -112,6 +112,32 @@ const bookmarkService = {
     })
   },
 
+  moveBookmarksAbove: async (userData, bookmarkData) => {
+    return new Promise(async function(resolve, reject) {
+      await prisma.bookmark.updateMany({
+        where: {
+          ownerUuid: userData.uuid,
+          NOT: {
+            folderUuid: bookmarkData.folderUuid
+          },
+          position: {
+            gte: bookmarkData.position
+          }
+        },
+        data: {
+          position: { decrement: 1 },
+        },
+      })
+      .then(bookmarks => {
+        resolve(bookmarks);
+      })
+      .catch(err => {
+        console.log(err);
+        reject();
+      })
+    })
+  },
+
   moveBookmarksBelowInRange: async (userData, originalBookmarkData, editedBookmarkData) => {
     return new Promise(async function(resolve, reject) {
       await prisma.bookmark.updateMany({
