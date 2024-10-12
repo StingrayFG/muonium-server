@@ -4,13 +4,11 @@ ENV NODE_ENV production
 
 WORKDIR /app
 
-ENV PORT 4000
+ENV PORT 4400
 
 EXPOSE ${PORT}
 
-COPY uploads /app/uploads
 COPY package.json /app/package.json
-COPY package-lock.json /app/package-lock.json
 
 RUN npm ci
 
