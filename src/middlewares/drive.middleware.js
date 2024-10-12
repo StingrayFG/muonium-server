@@ -5,23 +5,27 @@ const driveService = require('../services/drive.service.js')
 
 const driveMiddleware = {
   checkDrive: async (req, res, next) => { 
-    driveService.getDrive(req.body.driveData)
-    .then(drive => {
-      if (drive) {
-        if (drive.ownerUuid === req.user.uuid) {
-          req.drive = drive;
-          next();
+    if (req.body.driveData) {
+      driveService.getDrive(req.body.driveData)
+      .then(drive => {
+        if (drive) {
+          if (drive.ownerUuid === req.user.uuid) {
+            req.drive = drive;
+            next();
+          } else {
+            return res.sendStatus(403);
+          }
         } else {
-          return res.sendStatus(403);
+          return res.sendStatus(404);
         }
-      } else {
-        return res.sendStatus(404);
-      }
-    })
-    .catch(err => {
-      console.log(err);
+      })
+      .catch(err => {
+        console.log(err);
+        return res.sendStatus(400);
+      })
+    } else {
       return res.sendStatus(400);
-    })
+    }
   },
   
   checkDriveSpace: async (req, res, next) => {

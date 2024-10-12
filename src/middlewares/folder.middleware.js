@@ -19,52 +19,60 @@ const folderMiddleware = {
   },
 
   checkFolderUuid: async (req, res, next) => {
-    if (req.body.folderData.uuid === 'home') {
-      req.folder = { uuid: 'home', absolutePath: '/home'}
-      next();
-    } else if (req.body.folderData.uuid === 'trash') {
-      req.folder = { uuid: 'trash', absolutePath: '/trash'}
-      next();
-    } else if (req.body.folderData.uuid ) {
-      await folderService.getFolderByUuid(req.body.folderData)
-      .then(folder => {
-        if (folder) {
-          req.folder = folder;
-          next();
-        } else {
-          return res.sendStatus(404);
-        }
-      })
-      .catch(err => {
-        console.log(err);
-        return res.sendStatus(500);
-      })
+    if (req.body.folderData) {
+      if (req.body.folderData.uuid === 'home') {
+        req.folder = { uuid: 'home', absolutePath: '/home'}
+        next();
+      } else if (req.body.folderData.uuid === 'trash') {
+        req.folder = { uuid: 'trash', absolutePath: '/trash'}
+        next();
+      } else if (req.body.folderData.uuid ) {
+        await folderService.getFolderByUuid(req.body.folderData)
+        .then(folder => {
+          if (folder) {
+            req.folder = folder;
+            next();
+          } else {
+            return res.sendStatus(404);
+          }
+        })
+        .catch(err => {
+          console.log(err);
+          return res.sendStatus(500);
+        })
+      } else {
+        return res.sendStatus(404);
+      }
     } else {
-      return res.sendStatus(404);
+      return res.sendStatus(400);
     }
   },
 
   checkFolderPath: async (req, res, next) => {
-    if (req.body.folderData.absolutePath === '/home') {
-      req.folder = { uuid: 'home', absolutePath: '/home'}
-      next();
-    } else if (req.body.folderData.uuid === 'trash') {
-      req.folder = { uuid: 'trash', absolutePath: '/trash'}
-      next();
-    } else if (req.body.folderData.absolutePath ) {
-      await folderService.getFolderByPath(req.body.folderData, req.drive)
-      .then(folder => {
-        if (folder) {
-          req.folder = folder;
-          next();
-        } else {
-          return res.sendStatus(404);
-        }
-      })
-      .catch(err => {
-        console.log(err);
-        return res.sendStatus(500);
-      })
+    if (req.body.folderData) {
+      if (req.body.folderData.absolutePath === '/home') {
+        req.folder = { uuid: 'home', absolutePath: '/home'}
+        next();
+      } else if (req.body.folderData.uuid === 'trash') {
+        req.folder = { uuid: 'trash', absolutePath: '/trash'}
+        next();
+      } else if (req.body.folderData.absolutePath ) {
+        await folderService.getFolderByPath(req.body.folderData, req.drive)
+        .then(folder => {
+          if (folder) {
+            req.folder = folder;
+            next();
+          } else {
+            return res.sendStatus(404);
+          }
+        })
+        .catch(err => {
+          console.log(err);
+          return res.sendStatus(500);
+        })
+      }
+    } else {
+      return res.sendStatus(400);
     }
   },
 

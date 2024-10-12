@@ -69,19 +69,23 @@ const fileMiddleware = {
 
 
   checkFile: async (req, res, next) => {
-    await fileService.getFile(req.body.fileData)
-    .then(file => {
-      if (file) {
-        req.file = file;
-        next();
-      } else {
-        return res.sendStatus(404);
-      }
-    })
-    .catch(err => {
-      console.log(err);
-      return res.sendStatus(500);
-    })
+    if (req.body.fileData) {
+      await fileService.getFile(req.body.fileData)
+      .then(file => {
+        if (file) {
+          req.file = file;
+          next();
+        } else {
+          return res.sendStatus(404);
+        }
+      })
+      .catch(err => {
+        console.log(err);
+        return res.sendStatus(500);
+      })
+    } else {
+      return res.sendStatus(400);
+    }
   },
 
   checkParentFolder: async (req, res, next) => {
