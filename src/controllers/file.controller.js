@@ -20,10 +20,9 @@ const fileController = {
         return res.sendStatus(403); 
       } else if (file.uuid != req.params.uuid) { 
         return res.sendStatus(403); 
-      } else if ((Math.floor(Date.now() / 1000) - file.iat) > 300) { 
+      } else if ((Math.floor(Date.now() / 1000) - file.iat) > process.env.DOWNLOAD_LINK_VALID_FOR) { 
         return res.sendStatus(410); 
-      } 
-      else {
+      } else {
         await fileService.getFile({ uuid: req.params.uuid })
         .then(fileData => {
           if (fileData) {
