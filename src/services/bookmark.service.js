@@ -183,7 +183,6 @@ const bookmarkService = {
         },
       })
       .then(bookmarks => {
-        console.log(bookmarks)
         resolve(bookmarks);
       })
       .catch(err => {
