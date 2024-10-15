@@ -172,11 +172,12 @@ const folderController = {
   },
 
   deleteFolder: async (req, res, next) => {
-    const foldersToDeleteUuids = [req.body.folderData.uuid];
+    let foldersToDeleteUuids = [req.folder.uuid];
 
-    const findChildren = async (folder) => {
+    const findChildren = async (parentFolder) => {
+      console.log(parentFolder.name)
       return new Promise(async function(resolve, reject) {
-        await folderService.getFoldersByParent(req.body.folderData, req.body.driveData)
+        await folderService.getFoldersByParent(parentFolder, req.body.driveData)
         .then(async folders => {
           if (folders.length > 0) {
             await Promise.allSettled(
@@ -185,7 +186,7 @@ const folderController = {
               })
             )
           }
-          foldersToDeleteUuids.concat(folders.map((childFolder) => ( childFolder.uuid )));       
+          foldersToDeleteUuids = [...foldersToDeleteUuids, ...folders.map(childFolder => childFolder.uuid)];       
           resolve();
         })
         .catch(err => {
@@ -195,7 +196,7 @@ const folderController = {
       })
     }
 
-    await findChildren(req.user, foldersToDeleteUuids)
+    await findChildren(req.folder)
     .then(async () => {
       await Promise.allSettled([
         await bookmarkService.deleteBookmarksByFoldersUuids(req.user, foldersToDeleteUuids),
