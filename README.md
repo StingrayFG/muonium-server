@@ -1,6 +1,6 @@
-# Muonium
+# About
 
-Muonium is a cloud storage app built with React, Redux, TailwindCSS, MUI, Express, Prisma, PostgreSQL, Dragonfly.
+muonium is a cloud storage app built with React, Redux, TailwindCSS, MUI, Express, Prisma, PostgreSQL, Dragonfly.
 
 ### Real world example
 
