@@ -12,4 +12,4 @@ ENV NODE_ENV=production
 ENV PORT=4400
 EXPOSE ${PORT}
 
-CMD npx prisma migrate deploy | npm start
+CMD npx prisma migrate deploy | npm run production

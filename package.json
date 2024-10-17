@@ -3,7 +3,8 @@
   "version": "2.0.0",
   "private": true,
   "scripts": {
-    "start": "nodemon ./src/app.js"
+    "start": "nodemon ./src/app.js",
+    "production": "node ./src/app.js"
   },
   "prisma": {
     "schema": "src/prisma/schema.prisma"
