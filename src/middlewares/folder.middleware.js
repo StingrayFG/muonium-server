@@ -83,20 +83,24 @@ const folderMiddleware = {
     } else if (req.body.folderData.parentUuid === 'trash') {
       req.parentFolder = { uuid: req.body.folderData.parentUuid, absolutePath: '/trash'}
       next();
-    } else if (req.body.folderData.parentUuid ) {
-      await folderService.getParentFolder(req.body.folderData)
-      .then(folder => {
-        if (folder) {
-          req.parentFolder = folder;
-          next();
-        } else {
-          return res.sendStatus(400);
-        }
-      })
-      .catch(err => {
-        console.log(err);
-        return res.sendStatus(500);
-      })
+    } else if (req.body.folderData.parentUuid) {
+      if (req.body.folderData.uuid === req.body.folderData.parentUuid ) { 
+        return res.sendStatus(409);
+      } else {
+        await folderService.getParentFolder(req.body.folderData)
+        .then(folder => {
+          if (folder) {
+            req.parentFolder = folder;
+            next();
+          } else {
+            return res.sendStatus(400);
+          }
+        })
+        .catch(err => {
+          console.log(err);
+          return res.sendStatus(500);
+        })
+      }
     }
   }
   
