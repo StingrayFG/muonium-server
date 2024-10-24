@@ -4,6 +4,7 @@ const fs = require('fs');
 const fileService = require('../services/file.service.js');
 const folderService = require('../services/folder.service.js');
 const bookmarkService = require('../services/bookmark.service.js');
+const diskService = require('../services/disk.service.js')
 
 
 const folderController = {
@@ -25,7 +26,7 @@ const folderController = {
     const getThumbnail = async (file) => {
       return new Promise(async function(resolve, reject) {
         const image = await fs.promises.readFile('thumbnails/' + file.name + '.' + file.nameExtension, { encoding: 'base64' });
-        file.thumbnail = image
+        file.thumbnail = image;
         resolve(file);
       })
     }
@@ -175,7 +176,6 @@ const folderController = {
     let foldersToDeleteUuids = [req.folder.uuid];
 
     const findChildren = async (parentFolder) => {
-      console.log(parentFolder.name)
       return new Promise(async function(resolve, reject) {
         await folderService.getFoldersByParent(parentFolder, req.body.driveData)
         .then(async folders => {
@@ -196,12 +196,32 @@ const folderController = {
       })
     }
 
+    const deleteFiles = async () => {
+      return new Promise(async function(resolve, reject) {
+        await fileService.getFilesByParentUuids(foldersToDeleteUuids)
+        .then(async files => {
+          await fileService.deleteFilesByParentUuids(foldersToDeleteUuids)
+          .then(async () => {
+            await Promise.allSettled(
+              files.map(async file => {
+                return await diskService.deleteFileOnDisk(file);
+              })
+            )
+            resolve(); 
+          })
+        })
+        .catch(err => {
+          reject(err);
+        })
+      })
+    }
+
     await findChildren(req.folder)
     .then(async () => {
       await Promise.allSettled([
         await bookmarkService.deleteBookmarksByFoldersUuids(req.user, foldersToDeleteUuids),
-        await fileService.deleteFilesByFoldersUuids(foldersToDeleteUuids),
-        await folderService.deleteFoldersByFoldersUuids(foldersToDeleteUuids)
+        await folderService.deleteFoldersByFoldersUuids(foldersToDeleteUuids),
+        await deleteFiles()
       ])
       .then(() => {
         return res.send({ folderData: req.folder });

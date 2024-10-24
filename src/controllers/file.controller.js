@@ -5,6 +5,8 @@ const crypto = require('crypto');
 
 const driveService = require('../services/drive.service.js')
 const fileService = require('../services/file.service.js')
+const diskService = require('../services/disk.service.js')
+
 
 const fileController = {
 
@@ -59,7 +61,7 @@ const fileController = {
 
     const modificationDate = Date.now();
 
-    if ((originalFile.parentUuid === req.body.fileData.parentUuid) && (path.parse(originalFile).name === req.body.fileData.name)) {
+    if ((originalFile.parentUuid === req.body.fileData.parentUuid) && (originalFile.name === req.body.fileData.name)) {
       return res.sendStatus(409);
     } else {
       req.body.fileData.uuid = crypto.randomUUID();
@@ -69,26 +71,20 @@ const fileController = {
       delete req.body.fileData.type;  
     }
 
-    // File is copied first to mitigate the possibility of files getting created in the database but not on the disk
-    fs.copyFile('uploads/' + originalFile.name + '.' + originalFile.nameExtension, 
-    'uploads/' +  req.body.fileData.name + '.' + req.body.fileData.nameExtension, async (err) => {
-      if (err) {
-        console.log(err);
-        return res.sendStatus(500);
-      } else {
-        await fileService.createFile(req.body.fileData) 
-        .then(async fileData => {
-          await driveService.updateDriveUsedSpace(req.drive, req.file.size)
-          .then(() => {
-            return res.send({ fileData });
-          })
+    await diskService.copyFileOnDisk(originalFile, req.body.fileData)
+    .then(async () => {
+      await fileService.createFile(req.body.fileData) 
+      .then(async fileData => {
+        await driveService.updateDriveUsedSpace(req.drive, req.file.size)
+        .then(() => {
+          return res.send({ fileData });
         })
-        .catch(err => {
-          console.log(err)
-          return res.sendStatus(500);
-        }) 
-      }
+      })
     })
+    .catch(err => {
+      console.log(err)
+      return res.sendStatus(500);
+    }) 
   },
 
   renameFile: async (req, res, next) => {
@@ -98,19 +94,14 @@ const fileController = {
     req.body.fileData.nameExtension = modificationDate + '';
     req.body.fileData.modificationDate = new Date(modificationDate);
 
-    await fileService.updateFileName(req.body.fileData)
-    .then(fileData => {
-      fs.rename('uploads/' + originalFile.name + '.' + originalFile.nameExtension, 
-      'uploads/' + req.body.fileData.name + '.' + req.body.fileData.nameExtension, async (err) => {
-        if (err) {
-          console.log(err)
-          await fileService.updateFileName(req.file) // Revert file data in the database
-          .then(() => {
-            return res.sendStatus(500);
-          })
-        } else {
+    await diskService.copyFileOnDisk(originalFile, req.body.fileData)
+    .then(async () => {
+      await fileService.updateFileName(req.body.fileData)
+      .then(async fileData => {
+        await diskService.deleteFileOnDisk(originalFile)
+        .then(() => {
           return res.send({ fileData });
-        }
+        })   
       })
     })
     .catch(err => {
@@ -124,9 +115,10 @@ const fileController = {
     .then(fileData => {
       return res.send({ fileData });
     })
-    .catch(() => {
+    .catch(err => {
+      console.log(err)
       return res.sendStatus(500);
-    })
+    }) 
   },
 
   removeFile: async (req, res, next) => {
@@ -155,18 +147,11 @@ const fileController = {
     await fileService.deleteFile(req.file) 
     .then(async fileData => {
       await driveService.updateDriveUsedSpace(req.drive, -req.file.size) // req.file is used to prevent the file size spoofing
-      .then(() => {
-        fs.unlink('uploads/' + req.body.fileData.name + '.' + req.body.fileData.nameExtension, async (err) => {
-          if (err) {
-            console.log(err);
-          }
-        })
-        fs.unlink('thumbnails/' + req.body.fileData.name + '.' + req.body.fileData.nameExtension, async (err) => {
-          if (err) {
-            console.log(err);
-          }
-        })
-        return res.send({ fileData });
+      .then(async () => {
+        await deleteFileOnDisk(req.file)
+        .then(() => {
+          return res.send({ fileData });
+        })      
       })
     }) 
     .catch(err => {

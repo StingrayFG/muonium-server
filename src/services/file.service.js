@@ -68,6 +68,23 @@ const fileService = {
     })
   },
 
+  getFilesByParentUuids: async (parentUuids) => {
+    return new Promise(async function(resolve, reject) {
+      await prisma.file.findMany({
+        where: {
+          parentUuid: { in: parentUuids }
+        },
+      })
+      .then(files => {
+        resolve(files);
+      })
+      .catch(err => {
+        console.log(err);
+        reject();
+      })
+    })
+  },
+
   getRemovedFiles: async (driveData) => {
     return new Promise(async function(resolve, reject) {
       await prisma.file.findMany({
@@ -193,15 +210,15 @@ const fileService = {
     })
   },
 
-  deleteFilesByFoldersUuids: async (folderUuids) => {
+  deleteFilesByParentUuids: async (parentUuids) => {
     return new Promise(async function(resolve, reject) {
       await prisma.file.deleteMany({
         where: {
-          parentUuid: { in: folderUuids }
+          parentUuid: { in: parentUuids }
         },
       })
-      .then(file => {
-        resolve(file);
+      .then(files => {
+        resolve(files);
       })
       .catch(err => {
         console.log(err);
