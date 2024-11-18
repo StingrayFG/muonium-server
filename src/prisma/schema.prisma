@@ -49,6 +49,7 @@ model file {
 
 model folder {
   name              String
+  size              Int       @default(0)
 
   creationDate      DateTime? @db.Timestamptz(3)  @default(dbgenerated("NOW()")) 
   modificationDate  DateTime? @db.Timestamptz(3)  @default(dbgenerated("NOW()")) 

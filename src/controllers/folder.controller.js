@@ -58,8 +58,18 @@ const folderController = {
         folderWithChildren.files = [];
       })
     ])
-    .then(() => {
-      return res.send({ folderData: folderWithChildren });
+    .then(async () => {
+      const recalculatedSize = folderWithChildren.folders.length + folderWithChildren.files.length;
+
+      if (folderWithChildren.size !== recalculatedSize) {
+        await folderService.updateFolderSize({
+          ...folderWithChildren,
+          size: folderWithChildren.folders.length + folderWithChildren.files.length
+        })
+        return res.send({ folderData: { ...folderWithChildren, size: recalculatedSize } });
+      } else {
+        return res.send({ folderData: folderWithChildren });
+      }
     })
     .catch(err => {
       console.log(err)
@@ -77,7 +87,8 @@ const folderController = {
 
       absolutePath: req.parentFolder.absolutePath + '/' + req.body.folderData.name, 
     })
-    .then(folderData => {
+    .then(async folderData => {
+      await folderService.incrementFolderSize({ uuid: req.parentFolder.uuid });
       return res.send({ folderData });
     }) 
     .catch(err => {
@@ -139,7 +150,9 @@ const folderController = {
             return await folderService.updateFolderPath(folder);
           })
         )
-        .then(() => {
+        .then(async () => {
+          await folderService.decrementFolderSize({ uuid: req.folder.parentUuid });
+          await folderService.incrementFolderSize({ uuid: req.body.folderData.uuid });
           return res.send({ folderData });
         })
       })
@@ -152,7 +165,8 @@ const folderController = {
 
   removeFolder: async (req, res, next) => {
     await folderService.updateFolderIsRemoved(req.body.folderData, true)
-    .then(folderData => {
+    .then(async folderData => {
+      await folderService.decrementFolderSize({ uuid: req.body.folderData.parentUuid });
       return res.send({ folderData });
     }) 
     .catch(err => {
@@ -163,7 +177,8 @@ const folderController = {
 
   recoverFolder: async (req, res, next) => {
     await folderService.updateFolderIsRemoved(req.body.folderData, false)
-    .then(folderData => {
+    .then(async folderData => {
+      await folderService.incrementFolderSize({ uuid: req.body.folderData.parentUuid });
       return res.send({ folderData });
     }) 
     .catch(err => {

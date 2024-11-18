@@ -5,6 +5,7 @@ const crypto = require('crypto');
 
 const driveService = require('../services/drive.service.js')
 const fileService = require('../services/file.service.js')
+const folderService = require('../services/folder.service.js')
 const diskService = require('../services/disk.service.js')
 
 
@@ -46,7 +47,8 @@ const fileController = {
     await fileService.createFile(req.body.fileData)
     .then(async fileData => {
       await driveService.updateDriveUsedSpace(req.drive, req.file.size)
-      .then(() => {
+      .then(async () => {
+        await folderService.incrementFolderSize({ uuid: req.body.fileData.parentUuid });
         return res.send({ fileData });
       })
     }) 
@@ -76,7 +78,8 @@ const fileController = {
       await fileService.createFile(req.body.fileData) 
       .then(async fileData => {
         await driveService.updateDriveUsedSpace(req.drive, req.file.size)
-        .then(() => {
+        .then(async () => {
+          await folderService.incrementFolderSize({ uuid: req.body.fileData.parentUuid });
           return res.send({ fileData });
         })
       })
@@ -112,7 +115,9 @@ const fileController = {
 
   moveFile: async (req, res, next) => {
     await fileService.updateFileParent(req.body.fileData)
-    .then(fileData => {
+    .then(async fileData => {
+      await folderService.decrementFolderSize({ uuid: req.file.parentUuid });
+      await folderService.incrementFolderSize({ uuid: req.body.fileData.uuid });
       return res.send({ fileData });
     })
     .catch(err => {
@@ -123,7 +128,8 @@ const fileController = {
 
   removeFile: async (req, res, next) => {
     await fileService.updateFileIsRemoved(req.body.fileData, true)
-    .then(fileData => {
+    .then(async fileData => {
+      await folderService.decrementFolderSize({ uuid: req.body.fileData.parentUuid });
       return res.send({ fileData });
     })
     .catch(err => {
@@ -134,7 +140,8 @@ const fileController = {
 
   recoverFile: async (req, res, next) => {
     await fileService.updateFileIsRemoved(req.body.fileData, false)
-    .then(fileData => {
+    .then(async fileData => {
+      await folderService.incrementFolderSize({ uuid: req.body.fileData.parentUuid });
       return res.send({ fileData });
     })
     .catch(err => {

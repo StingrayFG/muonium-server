@@ -218,6 +218,81 @@ const folderService = {
     })
   },
 
+  updateFolderSize: async (folderData) => {
+    return new Promise(async function(resolve, reject) {
+      if (folderData.uuid && !['home', 'trash'].includes(folderData.uuid)) {
+        await prisma.folder.update({
+          where: {
+            uuid: folderData.uuid,
+          },
+          data: {
+            name: folderData.name,
+            size: folderData.size
+          },
+        })
+        .then(folder => {
+          resolve(folder);
+        })
+        .catch(err => {
+          console.log(err);
+          resolve();
+        })
+      } else {
+        resolve();
+      }
+    })
+  },
+
+  incrementFolderSize: async (folderData) => {
+    return new Promise(async function(resolve, reject) {
+      if (folderData.uuid && !['home', 'trash'].includes(folderData.uuid)) {
+        await prisma.folder.update({
+          where: {
+            uuid: folderData.uuid,
+          },
+          data: {
+            name: folderData.name,
+            size: { increment: 1 }
+          },
+        })
+        .then(folder => {
+          resolve(folder);
+        })
+        .catch(err => {
+          console.log(err);
+          resolve();
+        }) 
+      } else {
+        resolve();
+      }
+    })
+  },
+
+  decrementFolderSize: async (folderData) => {
+    return new Promise(async function(resolve, reject) {
+      if (folderData.uuid && !['home', 'trash'].includes(folderData.uuid)) {
+        await prisma.folder.update({
+          where: {
+            uuid: folderData.uuid,
+          },
+          data: {
+            name: folderData.name,
+            size: { decrement: 1 }
+          },
+        })
+        .then(folder => {
+          resolve(folder);
+        })
+        .catch(err => {
+          console.log(err);
+          resolve();
+        }) 
+      } else {
+        resolve();
+      }
+    })
+  },
+
   updateFolderIsRemoved: async (folderData, isRemoved) => {
     return new Promise(async function(resolve, reject) {
       await prisma.folder.update({
@@ -233,7 +308,7 @@ const folderService = {
       })
       .catch(err => {
         console.log(err);
-        reject();
+        resolve();
       })
     })
   },
