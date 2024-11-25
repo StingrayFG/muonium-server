@@ -1,4 +1,4 @@
-const prisma = require('../instances/prisma.js')
+const prisma = require('../../instances/prisma.js')
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 
