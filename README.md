@@ -1,6 +1,7 @@
 # About
 
-muonium is a cloud storage app built with React, Redux, TailwindCSS, MUI, Express, Prisma, PostgreSQL, Dragonfly.
+muonium is a cloud storage app.
+muonium-server is built with Express, Jest+Supertest, Prisma+PostgreSQL, Dragonfly (Redis).
 
 ### Real world example
 
