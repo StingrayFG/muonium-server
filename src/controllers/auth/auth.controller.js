@@ -1,19 +1,25 @@
 const jwt = require('jsonwebtoken');
 
-const redis = require('../instances/redis.js')
-const userService = require('../services/user.service.js')
-const driveService = require('../services/drive.service.js')
+if (!process.env.IGNORE_AUTH_LIMIT) {
+  const redis = require('../../instances/redis.js') 
+}
+const userService = require('../../services/user/user.service.js')
+const driveService = require('../../services/drive.service.js')
 
 
 const userController = {
 
-  login: async (req, res, next) => {
+  login: async (req, res, next) => { 
+    let loginAttempt;
+    if (!process.env.IGNORE_AUTH_LIMIT) {
+      loginAttempt = await redis.get(req.headers['x-forwarded-for'] + '-login'); 
+    }
     
-    const loginAttempt = await redis.get(req.headers['x-forwarded-for'] + '-login'); 
-
     if (!loginAttempt || process.env.IGNORE_AUTH_LIMIT) {
-      redis.set(req.headers['x-forwarded-for'] + '-login', ' ');
-      redis.expire(req.headers['x-forwarded-for'] + '-login', 3); 
+      if (!process.env.IGNORE_AUTH_LIMIT) {
+        redis.set(req.headers['x-forwarded-for'] + '-login', ' ');
+        redis.expire(req.headers['x-forwarded-for'] + '-login', 3); 
+      }
 
       await userService.getUser(req.body.userData)
       .then(user => {
@@ -35,7 +41,6 @@ const userController = {
   },
 
   signup: async (req, res, next) => {
-
     const createUserAndDrive = async () => {
       return new Promise(async function(resolve, reject) {
         await userService.createUser(req.body.userData)
@@ -56,14 +61,20 @@ const userController = {
       })
     }
 
-    const signupAttempt = await redis.get(req.headers['x-forwarded-for'] + '-signup'); 
+    let signupAttempt;
+    if (!process.env.IGNORE_AUTH_LIMIT) {
+      signupAttempt = await redis.get(req.headers['x-forwarded-for'] + '-signup'); 
+    }
 
     if (!signupAttempt || process.env.IGNORE_AUTH_LIMIT) {
       await createUserAndDrive()
       .then(() => {
-        redis.set(req.headers['x-forwarded-for'] + '-signup', ' ');
-        redis.expire(req.headers['x-forwarded-for'] + '-signup', 3600);
-        return res.sendStatus(201);
+        if (!process.env.IGNORE_AUTH_LIMIT) {
+          redis.set(req.headers['x-forwarded-for'] + '-signup', ' ');
+          redis.expire(req.headers['x-forwarded-for'] + '-signup', 3600);
+        }
+        
+        return res.status(201).end();
       })
       .catch(err => {
         console.log(err);
@@ -75,6 +86,7 @@ const userController = {
       return res.status(423).end();
     }
   }
+
 }
 
 module.exports = userController;

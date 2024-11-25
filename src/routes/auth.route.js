@@ -3,7 +3,7 @@ const router = express.Router();
 
 const authMw = require('../middlewares/auth.middleware.js')
 
-const authController = require('../controllers/auth.controller.js')
+const authController = require('../controllers/auth/auth.controller.js')
 
 
 router.post('/login', authMw.validateUserData, authController.login);
