@@ -1,27 +1,25 @@
 # About
 
-muonium is a cloud storage app.
-muonium-server is built with Express, Jest+Supertest, Prisma+PostgreSQL, Dragonfly (Redis).
+muonium is a crossplatform cloud storage web app, built with a variety of modern tools and libraries
+
+muonium-server is built with Express, Jest+Supertest, Prisma+PostgreSQL, Dragonfly (Redis)
+
+Client repo: https://github.com/StingrayFG/muonium-client/
 
 ### Real world example
 
 See the real world example at https://muoniumdrive.com
 
-# Features
+# Server features
 
-- Drag & Drop support
-- Custom Redux slice-based clipboard
-- Grid & List view options
-- Traversing folders by their absolute path
+- Custom directories handling, built from scratch
+- Supports traversing and managing directories based on their absolute path
+- Files & folders metadata is stored purely in the database
 - Bookmarks support
-- JWT auth, all requests get authenticated
-- Files & folders metadata is stored in the database
+- JWT auth - all requests get authenticated
 
-# To be added
+# Todo
 
-- Clustered backend
-- Mobile devices support
-- Fully customizable list view with columns customization
+- Separate files, folders & bookmarks logic into a completely self sufficient unit in order to move closer towards the implementation of clustered server architecture
+- Add more tests to cover a wider range of possible issues
 
-# 
-More information can be found in the main repo, https://github.com/StingrayFG/muonium-client/
