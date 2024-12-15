@@ -164,7 +164,7 @@ const folderController = {
   },
 
   removeFolder: async (req, res, next) => {
-    await folderService.updateFolderIsRemoved(req.body.folderData, true)
+    await folderService.updateFolderIsRemoved({ ...req.body.folderData, isRemoved: true })
     .then(async folderData => {
       await folderService.decrementFolderSize({ uuid: req.body.folderData.parentUuid });
       return res.send({ folderData });
@@ -176,7 +176,7 @@ const folderController = {
   },
 
   recoverFolder: async (req, res, next) => {
-    await folderService.updateFolderIsRemoved(req.body.folderData, false)
+    await folderService.updateFolderIsRemoved({ ...req.body.folderData, isRemoved: false })
     .then(async folderData => {
       await folderService.incrementFolderSize({ uuid: req.body.folderData.parentUuid });
       return res.send({ folderData });

@@ -173,14 +173,14 @@ const fileService = {
     })
   },
 
-  updateFileIsRemoved: async (fileData, isRemoved) => {
+  updateFileIsRemoved: async (fileData) => {
     return new Promise(async function(resolve, reject) {
       await prisma.file.update({
         where: {
           uuid: fileData.uuid,
         },
         data: {
-          isRemoved: isRemoved,
+          isRemoved: fileData.isRemoved,
         },
       })
       .then(file => {

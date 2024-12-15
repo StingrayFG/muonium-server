@@ -127,7 +127,7 @@ const fileController = {
   },
 
   removeFile: async (req, res, next) => {
-    await fileService.updateFileIsRemoved(req.body.fileData, true)
+    await fileService.updateFileIsRemoved({ ...req.body.fileData, isRemoved: true })
     .then(async fileData => {
       await folderService.decrementFolderSize({ uuid: req.body.fileData.parentUuid });
       return res.send({ fileData });
@@ -139,7 +139,7 @@ const fileController = {
   },
 
   recoverFile: async (req, res, next) => {
-    await fileService.updateFileIsRemoved(req.body.fileData, false)
+    await fileService.updateFileIsRemoved({ ...req.body.fileData, isRemoved: false })
     .then(async fileData => {
       await folderService.incrementFolderSize({ uuid: req.body.fileData.parentUuid });
       return res.send({ fileData });

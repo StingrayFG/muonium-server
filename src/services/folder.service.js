@@ -293,14 +293,14 @@ const folderService = {
     })
   },
 
-  updateFolderIsRemoved: async (folderData, isRemoved) => {
+  updateFolderIsRemoved: async (folderData) => {
     return new Promise(async function(resolve, reject) {
       await prisma.folder.update({
         where: {
           uuid: folderData.uuid,
         },
         data: {
-          isRemoved: isRemoved,
+          isRemoved: folderData.isRemoved,
         },
       })
       .then(folder => {
