@@ -4,34 +4,45 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url     = env("DATABASE_URL")
 }
 
 
-model user {
+model User {
   uuid              String    
   login             String    @id
   password          String 
+
+  @@map("user")
 }
 
-model drive {
+model Drive {
   uuid              String    @id
   ownerUuid         String    
 
   spaceTotal        Int
   spaceUsed         Int
+
+  @@map("drive")
 }
 
-model bookmark {
+model Bookmark {
   ownerUuid         String    
   folderUuid        String 
   position          Int 
 
   @@id([ownerUuid, folderUuid])
+
+  @@map("bookmark")
 }
 
 
-model file {
+model File {
+  uuid              String    @id
+  ownerUuid         String 
+  driveUuid         String
+  parentUuid        String
+
   name              String
   nameExtension     String
   size              Int
@@ -39,27 +50,26 @@ model file {
   creationDate      DateTime? @db.Timestamptz(3)  @default(dbgenerated("NOW()")) 
   modificationDate  DateTime? @db.Timestamptz(3)  @default(dbgenerated("NOW()")) 
 
+  isRemoved         Boolean?  @default(false)
+
+  @@map("file")
+}
+
+model Folder {
   uuid              String    @id
   ownerUuid         String 
   driveUuid         String
-  parentUuid        String? 
+  parentUuid        String?
 
-  isRemoved         Boolean   @default(false)
-}
-
-model folder {
   name              String
-  size              Int       @default(0)
+  size              Int?      @default(0)
 
   creationDate      DateTime? @db.Timestamptz(3)  @default(dbgenerated("NOW()")) 
   modificationDate  DateTime? @db.Timestamptz(3)  @default(dbgenerated("NOW()")) 
 
-  uuid              String    @id
-  ownerUuid         String 
-  driveUuid         String
-  parentUuid        String? 
-
   absolutePath      String?
-  isRemoved         Boolean   @default(false)
-  isRemovedAsChild  Boolean   @default(false)
+  isRemoved         Boolean?  @default(false)
+  isRemovedAsChild  Boolean?  @default(false)
+
+  @@map("folder")
 }
