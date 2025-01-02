@@ -243,8 +243,8 @@ const folderService = {
     })
   },
 
-  incrementFolderSize: async (folderData: (Folder | FolderData)): Promise<Folder> => {
-    return new Promise<Folder>(async (resolve, reject) => {
+  incrementFolderSize: async (folderData: (Folder | FolderData)): Promise<Folder | void> => {
+    return new Promise<Folder | void>(async (resolve, reject) => {
       if (folderData.uuid && !['home', 'trash', '', null].includes(folderData.uuid)) {
         await prisma.folder.update({
           where: {
@@ -262,14 +262,16 @@ const folderService = {
           console.log(err);
           reject();
         })
+      } else if (['home', 'trash', '', null].includes(folderData.uuid)) {
+        resolve();
       } else {
         reject();
       }
     })
   },
 
-  decrementFolderSize: async (folderData: (Folder | FolderData)): Promise<Folder> => {
-    return new Promise<Folder>(async (resolve, reject) => {
+  decrementFolderSize: async (folderData: (Folder | FolderData)): Promise<(Folder | void)> => {
+    return new Promise<(Folder | void)>(async (resolve, reject) => {
       if (folderData.uuid && !['home', 'trash', '', null].includes(folderData.uuid)) {
         await prisma.folder.update({
           where: {
@@ -287,6 +289,8 @@ const folderService = {
           console.log(err);
           reject();
         })
+      } else if (['home', 'trash', '', null].includes(folderData.uuid)) {
+        resolve();
       } else {
         reject();
       }

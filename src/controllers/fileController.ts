@@ -51,12 +51,12 @@ const fileController = {
 
       uuid: crypto.randomUUID(),
 
-      nameExtension: Date.now(),
+      nameExtension: req.file!.filename.split('.').pop(),
 
       isRemoved: false,
     })
     .then(async (fileData: File) => {
-      await driveService.updateDriveUsedSpace(req.ogDrive!, req.ogFile!.size)
+      await driveService.updateDriveUsedSpace(req.ogDrive!, req.file!.size)
       .then(async () => {
         await folderService.incrementFolderSize({ uuid: req.body.fileData.parentUuid });
         return res.send({ fileData });

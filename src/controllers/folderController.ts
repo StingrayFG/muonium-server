@@ -91,6 +91,7 @@ const folderController = {
   },
 
   createFolder: async (req: Request, res: Response): Promise<any> => {
+    delete req.body.folderData.type
     await folderService.createFolder({
       ...req.body.folderData,
 
@@ -106,7 +107,7 @@ const folderController = {
       await folderService.incrementFolderSize({ uuid: req.ogParentFolder!.uuid });
       return res.send({ folderData });
     }) 
-    .catch((err: any) => {
+    .catch((err) => {
       console.log(err)
       return res.sendStatus(500);
     }) 
