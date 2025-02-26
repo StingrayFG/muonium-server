@@ -2,14 +2,14 @@ import { Request, Response, NextFunction } from 'express';
 
 import { Bookmark, Folder } from '@prisma/client';
 
-import folderService from '@/services/folderService';
-import bookmarkService from '@/services/bookmarkService';
+import folderServices from '@/services/folderServices';
+import bookmarkServices from '@/services/bookmarkServices';
 
 
-const bookmarkMiddleware = {
+const bookmarkMiddlewares = {
 
   checkBookmarkDoesNotExist: async (req: Request, res: Response, next: NextFunction): Promise<any> => { 
-    await bookmarkService.getBookmark(req.body.userData, req.body.bookmarkData)
+    await bookmarkServices.getBookmark(req.body.userData, req.body.bookmarkData)
     .then((bookmark: (Bookmark | null)) => {
       if (bookmark) {
         return res.sendStatus(409);    
@@ -24,7 +24,7 @@ const bookmarkMiddleware = {
   },
 
   checkBookmarkDoesExist: async (req: Request, res: Response, next: NextFunction): Promise<any> => { 
-    await bookmarkService.getBookmark(req.body.userData, req.body.bookmarkData)
+    await bookmarkServices.getBookmark(req.body.userData, req.body.bookmarkData)
     .then((bookmark: (Bookmark | null)) => {
       if (bookmark) {
         req.ogBookmark = bookmark;
@@ -41,7 +41,7 @@ const bookmarkMiddleware = {
 
   checkBookmaredFolderExists: async (req: Request, res: Response, next: NextFunction): Promise<any> => { 
     if (req.body.bookmarkData.folder?.uuid) {
-      await folderService.getFolderByUuid(req.body.bookmarkData.folder)
+      await folderServices.getFolderByUuid(req.body.bookmarkData.folder)
       .then((folder : (Folder | null)) => {
         if (folder) {
           next();
@@ -75,4 +75,4 @@ const bookmarkMiddleware = {
    
 }
 
-export default bookmarkMiddleware;
+export default bookmarkMiddlewares;

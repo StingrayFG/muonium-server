@@ -1,12 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
-import folderService from '@/services/folderService';
+import folderServices from '@/services/folderServices';
 
 import { Folder } from '@prisma/client';
 
-const folderMiddleware = {
+
+const folderMiddlewares = {
 
   checkIfNameIsUsed: async (req: Request, res: Response, next: NextFunction): Promise<any> => { 
-    await folderService.checkIfNameIsAlreadyUsed(req.body.folderData)
+    await folderServices.checkIfNameIsAlreadyUsed(req.body.folderData)
     .then(isUsed => {
       if (isUsed) {
         return res.sendStatus(409);
@@ -38,7 +39,7 @@ const folderMiddleware = {
         }
         next();
       } else if (req.body.folderData.uuid ) {
-        await folderService.getFolderByUuid(req.body.folderData)
+        await folderServices.getFolderByUuid(req.body.folderData)
         .then((folder: (Folder | null)) => {
           if (folder) {
             req.ogFolder = folder;
@@ -77,7 +78,7 @@ const folderMiddleware = {
         }
         next();
       } else if (req.body.folderData.absolutePath ) {
-        await folderService.getFolderByPath(req.body.folderData, req.ogDrive!)
+        await folderServices.getFolderByPath(req.body.folderData, req.ogDrive!)
         .then((folder: (Folder | null)) => {
           if (folder) {
             req.ogFolder = folder;
@@ -108,7 +109,7 @@ const folderMiddleware = {
       if (req.body.folderData.uuid === req.body.folderData.parentUuid ) { 
         return res.sendStatus(409);
       } else {
-        await folderService.getParentFolder(req.body.folderData)
+        await folderServices.getParentFolder(req.body.folderData)
         .then((folder: (Folder | null)) => {
           if (folder) {
             req.ogParentFolder = folder;
@@ -127,4 +128,4 @@ const folderMiddleware = {
   
 }
 
-export default folderMiddleware;
+export default folderMiddlewares;

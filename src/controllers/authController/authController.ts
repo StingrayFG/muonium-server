@@ -8,8 +8,8 @@ import { UserData } from '@/types/UserData';
 
 import { instance as redis } from '@/instances/redis';
 
-import userService from '@/services/userService';
-import driveService from '@/services/driveService';
+import userServices from '@/services/userServices/userServices';
+import driveServices from '@/services/driveServices';
 
 
 const authController = {
@@ -30,7 +30,7 @@ const authController = {
         redis.expire(req.headers['x-forwarded-for'] + '-login', 3); 
       }
 
-      await userService.getUser(req.body.userData)
+      await userServices.getUser(req.body.userData)
       .then((user: UserData) => {
         return res.send({ userData: {
           uuid: user.uuid,
@@ -56,13 +56,13 @@ const authController = {
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hashSync(req.body.userData.password, saltRounds)
         
-        await userService.createUser({
+        await userServices.createUser({
           uuid: userUuid,
           login: req.body.userData.login,
           password: hashedPassword
         })
         .then(async (user: User) => {
-          await driveService.createDrive(user)
+          await driveServices.createDrive(user)
           .then((drive: Drive) => {
             resolve(); 
           })

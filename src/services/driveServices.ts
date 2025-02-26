@@ -6,7 +6,7 @@ import { Drive } from '@prisma/client';
 import { UuidOnly } from '@/types/UuidOnly';
 
 
-const driveService = {
+const driveServices = {
   getDrive: async (driveData: UuidOnly): Promise<(Drive | null)> => {
     return new Promise<(Drive | null)>(async (resolve, reject) => {
       if (driveData.uuid) {
@@ -98,4 +98,4 @@ const driveService = {
   },
 }
 
-export default driveService;
+export default driveServices;

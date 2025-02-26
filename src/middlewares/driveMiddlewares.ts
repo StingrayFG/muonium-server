@@ -2,13 +2,13 @@ import { Request, Response, NextFunction } from 'express';
 
 import { Drive } from '@prisma/client';
 
-import driveService from '@/services/driveService';
+import driveServices from '@/services/driveServices';
 
 
-const driveMiddleware = {
+const driveMiddlewares = {
   checkDrive: async (req: Request, res: Response, next: NextFunction): Promise<any> => { 
     if (req.body.driveData) {
-      driveService.getDrive(req.body.driveData)
+      driveServices.getDrive(req.body.driveData)
       .then((drive: (Drive | null)) => {
         if (drive) {
           if (drive.ownerUuid === req.ogUser!.uuid) {
@@ -39,4 +39,4 @@ const driveMiddleware = {
   },
 }
 
-export default driveMiddleware;
+export default driveMiddlewares;

@@ -2,9 +2,10 @@ import bcrypt from 'bcrypt'
 
 import { prismaMock } from '@/singleton'
 
-import userService from '@/services/userService';
+import userServices from './userServices';
 
 
+//
 const clientUserData = {
   login: 'adminadmin',
   password: 'adminadmin',
@@ -20,7 +21,12 @@ const serverUserData = {
 }
 
 
-test('service-login', async () => {
-  prismaMock.user.findUnique.mockResolvedValue(serverUserData)
-  await expect(userService.getUser(clientUserData)).resolves.toEqual(serverUserData)
+//
+describe('userService', () => {
+
+  test('log in', async () => {
+    prismaMock.user.findUnique.mockResolvedValue(serverUserData)
+    await expect(userServices.getUser(clientUserData)).resolves.toEqual(serverUserData)
+  })
+  
 })

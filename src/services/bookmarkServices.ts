@@ -6,7 +6,7 @@ import { UuidOnly } from '@/types/UuidOnly';
 import { BatchPayload } from '@/types/prisma/BatchPayload';
 
 
-const bookmarkService = {
+const bookmarkServices = {
   getBookmark: async (userData: UuidOnly, bookmarkData: (Bookmark | BookmarkData)): Promise<(Bookmark | null)> => {
     return new Promise<(Bookmark | null)>(async (resolve, reject) => {
       await prisma.bookmark.findUnique({
@@ -232,4 +232,4 @@ const bookmarkService = {
   },
 }
 
-export default bookmarkService;
+export default bookmarkServices;

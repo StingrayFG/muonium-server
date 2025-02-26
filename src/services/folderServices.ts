@@ -7,7 +7,7 @@ import { UuidOnly } from '@/types/UuidOnly';
 import { BatchPayload } from '@/types/prisma/BatchPayload';
 
 
-const folderService = {
+const folderServices = {
 
   checkIfNameIsAlreadyUsed: async (folderData: (Folder | FolderData)): Promise<boolean> => {
     return new Promise<boolean>(async (resolve, reject) => {
@@ -336,4 +336,4 @@ const folderService = {
 
 }
 
-export default folderService;
+export default folderServices;

@@ -5,7 +5,7 @@ import { File } from '@prisma/client';
 import { FileData } from '@/types/FileData';
 
 
-const diskService = {
+const diskServices = {
   copyFileOnDisk: async (originalFile: (File | FileData), newFile: (File | FileData)): Promise<void> => {
     return new Promise<void>(async function(resolve, reject) {
       if (['png', 'webp', 'jpg', 'jpeg'].includes(path.parse(originalFile.name!).ext.substring(1))) {
@@ -73,4 +73,4 @@ const diskService = {
 
 }
 
-export default diskService;
+export default diskServices;

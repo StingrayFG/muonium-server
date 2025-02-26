@@ -4,8 +4,8 @@ import { Request, Response } from 'express';
 import { Bookmark, Folder } from '@prisma/client'
 import { BookmarkData } from '@/types/BookmarkData';
 
-import bookmarkService from '@/services/bookmarkService'
-import folderService from '@/services/folderService'
+import bookmarkServices from '@/services/bookmarkServices'
+import folderServices from '@/services/folderServices'
 
 
 const bookmarkController = {
@@ -14,7 +14,7 @@ const bookmarkController = {
     // Used to find the bookmarked folder in the database, then add it to the passed bookmark object, then return it
     const getFolder = async (bookmark: BookmarkData) => { 
       return new Promise<void>(async (resolve, reject) => {
-        await folderService.getFolderByUuid({ uuid: bookmark.folderUuid })    
+        await folderServices.getFolderByUuid({ uuid: bookmark.folderUuid })    
         .then((folder: (Folder | null)) => {
           bookmark.uuid = bookmark.ownerUuid + bookmark.folderUuid;
           bookmark.folder = folder;
@@ -28,7 +28,7 @@ const bookmarkController = {
       })
     }
 
-    await bookmarkService.getBookmarks(req.ogUser!)
+    await bookmarkServices.getBookmarks(req.ogUser!)
     .then(async (bookmarksData: BookmarkData[]) => {
       await Promise.allSettled(
         bookmarksData.map(async bookmark => {
@@ -50,7 +50,7 @@ const bookmarkController = {
   },
 
   createBookmark: async (req: Request, res: Response): Promise<any> => {
-    await bookmarkService.getBookmarks(req.ogUser!)
+    await bookmarkServices.getBookmarks(req.ogUser!)
     .then(async (bookmarksData : BookmarkData[]) => {
       // Determine the newly created bookmark position, based on how many bookmarks the respective user has
       if (!req.body.bookmarkData.position) { 
@@ -61,7 +61,7 @@ const bookmarkController = {
         }
       }
 
-      await bookmarkService.createBookmark({
+      await bookmarkServices.createBookmark({
         folderUuid: req.body.bookmarkData.folderUuid,
         ownerUuid: req.ogUser!.uuid,
         position: req.body.bookmarkData.position
@@ -69,7 +69,7 @@ const bookmarkController = {
       .then(async (bookmarkData: Bookmark) => {
         /* Increment the position of already existing bookmarks, whose current position is greater than or equal to
         the position of the newly created bookmark */
-        await bookmarkService.moveBookmarksBelow(req.ogUser!, req.body.bookmarkData) 
+        await bookmarkServices.moveBookmarksBelow(req.ogUser!, req.body.bookmarkData) 
         .then(() => {
           return res.send({ bookmarkData });
         })
@@ -91,16 +91,16 @@ const bookmarkController = {
   },
 
   moveBookmark: async (req: Request, res: Response): Promise<any> => {
-    await bookmarkService.updateBookmarkPosition(req.ogUser!, req.body.bookmarkData)
+    await bookmarkServices.updateBookmarkPosition(req.ogUser!, req.body.bookmarkData)
     .then(async (bookmarkData : BookmarkData | null) => {
       let moveFunction;
 
       /* Choose how the user's bookmarks' positions will be changed
       It is used to keep the bookmark positions in order, with no gaps */
       if (req.body.bookmarkData.position > req.ogBookmark!.position) {
-        moveFunction = bookmarkService.moveBookmarksAboveInRange;
+        moveFunction = bookmarkServices.moveBookmarksAboveInRange;
       } else {
-        moveFunction = bookmarkService.moveBookmarksBelowInRange;
+        moveFunction = bookmarkServices.moveBookmarksBelowInRange;
       }
 
       // req.ogBookmark is the original bookmark, req.body.bookmarkData is the edited one
@@ -111,7 +111,7 @@ const bookmarkController = {
       .catch(async (err: any) => {
         console.log(err)
         // Return the moved bookmark's position if updating orher bookmarks' positions fails
-        await bookmarkService.updateBookmarkPosition(req.ogUser!, req.body.bookmark) 
+        await bookmarkServices.updateBookmarkPosition(req.ogUser!, req.body.bookmark) 
         .then(() => {
           return res.sendStatus(500);
         })
@@ -124,11 +124,11 @@ const bookmarkController = {
   },
 
   deleteBookmark: async (req: Request, res: Response): Promise<any> => {
-    await bookmarkService.deleteBookmark(req.ogUser!, req.ogBookmark!)
+    await bookmarkServices.deleteBookmark(req.ogUser!, req.ogBookmark!)
     .then(async (bookmarkData : (BookmarkData | null)) => {
       /* Decrement the position of already existing bookmarks, whose current position is greater than or equal to
       the position of the deleted bookmark */
-      await bookmarkService.moveBookmarksAbove(req.ogUser!, req.ogBookmark!) 
+      await bookmarkServices.moveBookmarksAbove(req.ogUser!, req.ogBookmark!) 
         .then(() => {
           return res.send({ bookmarkData });
         })

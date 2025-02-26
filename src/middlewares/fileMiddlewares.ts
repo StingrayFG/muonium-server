@@ -5,11 +5,11 @@ import sharp from 'sharp';
 
 import { File, Folder } from '@prisma/client';
 
-import fileService from '@/services/fileService';
-import folderService from '@/services/folderService';
+import fileServices from '@/services/fileServices';
+import folderServices from '@/services/folderServices';
 
 
-const fileMiddleware = {
+const fileMiddlewares = {
   generateThumbnail: async (req: Request, res: Response, next: NextFunction): Promise<any> => { 
     // Generate a low resolution version of the uploaded file, the save it in the thumbnails folder
     const extension = path.parse(req.file!.originalname!).ext.substring(1);
@@ -61,7 +61,7 @@ const fileMiddleware = {
 
   checkIfNameIsUsed: async (req: Request, res: Response, next: NextFunction): Promise<any> => { 
     // Check whether the handled file name is already used,
-    await fileService.checkIfNameIsAlreadyUsed(req.body.fileData)
+    await fileServices.checkIfNameIsAlreadyUsed(req.body.fileData)
     .then((isUsed: boolean) => {
       if (isUsed) {
         return res.sendStatus(409);
@@ -79,7 +79,7 @@ const fileMiddleware = {
     /* Check whether the handled file name is already used, and if it is, 
     delete the previously uploaded file and generated thumbnail from the disk.
     It is only used on file upload, when the request body needs to be assembled after file upload */
-    await fileService.checkIfNameIsAlreadyUsed(req.body.fileData)
+    await fileServices.checkIfNameIsAlreadyUsed(req.body.fileData)
     .then((isUsed: boolean) => {
       if (isUsed) {
         fs.unlink(req.file!.path!, async (err) => {
@@ -107,7 +107,7 @@ const fileMiddleware = {
   checkFile: async (req: Request, res: Response, next: NextFunction): Promise<any> => { 
     // Check whether the handled file exists
     if (req.body.fileData) {
-      await fileService.getFile(req.body.fileData)
+      await fileServices.getFile(req.body.fileData)
       .then((file: (File | null)) => {
         if (file) {
           req.ogFile = file;
@@ -134,7 +134,7 @@ const fileMiddleware = {
       req.ogParentFolder = { uuid: req.body.fileData.parentUuid, absolutePath: '/trash'}
       next();
     } else if (req.body.fileData.parentUuid ) {
-      await folderService.getParentFolder(req.body.fileData)
+      await folderServices.getParentFolder(req.body.fileData)
       .then((folder: (Folder | null)) => {
         if (folder) {
           req.ogParentFolder = folder;
@@ -151,4 +151,4 @@ const fileMiddleware = {
   }
 }
 
-export default fileMiddleware;
+export default fileMiddlewares;

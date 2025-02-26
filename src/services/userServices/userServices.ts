@@ -6,7 +6,7 @@ import { User } from '@prisma/client';
 import { UserData } from '@/types/UserData';
 
 
-const userService = {
+const userServices = {
   getUser: async (userData: (User | UserData)): Promise<UserData> => {
     return new Promise<UserData>(async (resolve, reject) => {
       if (userData.password) {
@@ -52,4 +52,4 @@ const userService = {
   }
 }
 
-export default userService
+export default userServices

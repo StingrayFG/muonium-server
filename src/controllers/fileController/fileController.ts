@@ -4,10 +4,10 @@ import crypto from 'crypto';
 
 import { File } from '@prisma/client';
 
-import driveService from '@/services/driveService';
-import fileService from '@/services/fileService';
-import folderService from '@/services/folderService';
-import diskService from '@/services/diskService';
+import driveServices from '@/services/driveServices';
+import fileServices from '@/services/fileServices';
+import folderServices from '@/services/folderServices';
+import diskServices from '@/services/diskServices';
 
 
 const fileController = {
@@ -28,10 +28,10 @@ const fileController = {
       } else if ((Math.floor(Date.now() / 1000) - file.iat) > parseInt(process.env.DOWNLOAD_LINK_VALID_FOR, 10)) { 
         return res.sendStatus(410); 
       } else {
-        await fileService.getFile({ uuid: req.params.uuid })
+        await fileServices.getFile({ uuid: req.params.uuid })
         .then((fileData: (File | null)) => {
           if (fileData) {
-            res.set('Content-Disposition', `attachment; filename='${ fileData.name }'`);
+            res.set('Content-Disposition', `attachment; filename=${ fileData.name }`);
             return res.sendFile(fileData.name + '.' + fileData.nameExtension, { root: 'uploads/' });
           } else {
             return res.status(404);
@@ -46,7 +46,7 @@ const fileController = {
   },
 
   uploadFile: async (req: Request, res: Response): Promise<any> => {
-    await fileService.createFile({
+    await fileServices.createFile({
       ...req.body.fileData,
 
       uuid: crypto.randomUUID(),
@@ -56,9 +56,9 @@ const fileController = {
       isRemoved: false,
     })
     .then(async (fileData: File) => {
-      await driveService.updateDriveUsedSpace(req.ogDrive!, req.file!.size)
+      await driveServices.updateDriveUsedSpace(req.ogDrive!, req.file!.size)
       .then(async () => {
-        await folderService.incrementFolderSize({ uuid: req.body.fileData.parentUuid });
+        await folderServices.incrementFolderSize({ uuid: req.body.fileData.parentUuid });
         return res.send({ fileData });
       })
     }) 
@@ -84,13 +84,13 @@ const fileController = {
       delete req.body.fileData.type;  
     }
 
-    await diskService.copyFileOnDisk(originalFile!, req.body.fileData)
+    await diskServices.copyFileOnDisk(originalFile!, req.body.fileData)
     .then(async () => {
-      await fileService.createFile(req.body.fileData) 
+      await fileServices.createFile(req.body.fileData) 
       .then(async (fileData: File) => {
-        await driveService.updateDriveUsedSpace(req.ogDrive!, originalFile!.size)
+        await driveServices.updateDriveUsedSpace(req.ogDrive!, originalFile!.size)
         .then(async () => {
-          await folderService.incrementFolderSize({ uuid: req.body.fileData.parentUuid });
+          await folderServices.incrementFolderSize({ uuid: req.body.fileData.parentUuid });
           return res.send({ fileData });
         })
       })
@@ -109,11 +109,11 @@ const fileController = {
     req.body.fileData.nameExtension = modificationDate + '';
     req.body.fileData.modificationDate = new Date(modificationDate);
 
-    await diskService.copyFileOnDisk(originalFile!, req.body.fileData)
+    await diskServices.copyFileOnDisk(originalFile!, req.body.fileData)
     .then(async () => {
-      await fileService.updateFileName(req.body.fileData)
+      await fileServices.updateFileName(req.body.fileData)
       .then(async (fileData: File) => {
-        await diskService.deleteFileOnDisk(originalFile!)
+        await diskServices.deleteFileOnDisk(originalFile!)
         .then(() => {
           return res.send({ fileData });
         })   
@@ -128,10 +128,10 @@ const fileController = {
   moveFile: async (req: Request, res: Response): Promise<any> => {
     const originalFile: File = req.ogFile!;
 
-    await fileService.updateFileParent(req.body.fileData)
+    await fileServices.updateFileParent(req.body.fileData)
     .then(async (fileData: File) => {
-      await folderService.decrementFolderSize({ uuid: originalFile!.parentUuid! });
-      await folderService.incrementFolderSize({ uuid: req.body.fileData.uuid });
+      await folderServices.decrementFolderSize({ uuid: originalFile!.parentUuid! });
+      await folderServices.incrementFolderSize({ uuid: req.body.fileData.parentUuid });
       return res.send({ fileData });
     })
     .catch((err: any) => {
@@ -141,9 +141,9 @@ const fileController = {
   },
 
   removeFile: async (req: Request, res: Response): Promise<any> => {
-    await fileService.updateFileIsRemoved({ ...req.body.fileData, isRemoved: true })
+    await fileServices.updateFileIsRemoved({ ...req.body.fileData, isRemoved: true })
     .then(async (fileData: File) => {
-      await folderService.decrementFolderSize({ uuid: req.body.fileData.parentUuid });
+      await folderServices.decrementFolderSize({ uuid: req.body.fileData.parentUuid });
       return res.send({ fileData });
     })
     .catch((err: any) => {
@@ -153,9 +153,9 @@ const fileController = {
   },
 
   recoverFile: async (req: Request, res: Response): Promise<any> => {
-    await fileService.updateFileIsRemoved({ ...req.body.fileData, isRemoved: false })
+    await fileServices.updateFileIsRemoved({ ...req.body.fileData, isRemoved: false })
     .then(async (fileData: File) => {
-      await folderService.incrementFolderSize({ uuid: req.body.fileData.parentUuid });
+      await folderServices.incrementFolderSize({ uuid: req.body.fileData.parentUuid });
       return res.send({ fileData });
     })
     .catch((err: any) => {
@@ -165,13 +165,13 @@ const fileController = {
   },
 
   deleteFile: async (req: Request, res: Response): Promise<any> => {
-    await fileService.deleteFile(req.ogFile!) 
+    await fileServices.deleteFile(req.ogFile!) 
     .then(async (fileData: File) => {
       /* req.ogFile is the original file object from the database, and it is used instead of 
       req.body.fileData to prevent the file size spoofing */
-      await driveService.updateDriveUsedSpace(req.ogDrive!, -req.ogFile!.size) 
+      await driveServices.updateDriveUsedSpace(req.ogDrive!, -req.ogFile!.size) 
       .then(async () => {
-        await diskService.deleteFileOnDisk(req.ogFile!)
+        await diskServices.deleteFileOnDisk(req.ogFile!)
         .then(() => {
           return res.send({ fileData });
         })      

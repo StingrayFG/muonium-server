@@ -7,10 +7,10 @@ import { File, Folder } from '@prisma/client';
 import { FolderData } from '@/types/FolderData';
 import { FileData } from '@/types/FileData';
 
-import fileService from '@/services/fileService';
-import folderService from '@/services/folderService';
-import bookmarkService from '@/services/bookmarkService';
-import diskService from '@/services/diskService';
+import fileServices from '@/services/fileServices';
+import folderServices from '@/services/folderServices';
+import bookmarkServices from '@/services/bookmarkServices';
+import diskServices from '@/services/diskServices';
 
 
 
@@ -27,11 +27,11 @@ const folderController = {
     let filesSearchFunction;
     
     if (req.body.folderData.uuid === 'trash') {
-      foldersSearchFunction = () => folderService.getRemovedFolders(req.ogDrive!);
-      filesSearchFunction = () => fileService.getRemovedFiles(req.ogDrive!);
+      foldersSearchFunction = () => folderServices.getRemovedFolders(req.ogDrive!);
+      filesSearchFunction = () => fileServices.getRemovedFiles(req.ogDrive!);
     } else {
-      foldersSearchFunction = () => folderService.getFoldersByParent(req.ogFolder!, req.ogDrive!);
-      filesSearchFunction = () => fileService.getFilesByParent(req.ogFolder!, req.ogDrive!);
+      foldersSearchFunction = () => folderServices.getFoldersByParent(req.ogFolder!, req.ogDrive!);
+      filesSearchFunction = () => fileServices.getFilesByParent(req.ogFolder!, req.ogDrive!);
     }
 
     const getThumbnail = async (file: FileData): Promise<void> => {
@@ -74,7 +74,7 @@ const folderController = {
 
       if (folderWithChildren.size !== recalculatedSize) {
         if (!['home', 'trash', '', null].includes(folderWithChildren.uuid)) {
-          await folderService.updateFolderSize({
+          await folderServices.updateFolderSize({
             ...folderWithChildren,
             size: folderWithChildren.folders!.length + folderWithChildren.files!.length
           })
@@ -92,7 +92,7 @@ const folderController = {
 
   createFolder: async (req: Request, res: Response): Promise<any> => {
     delete req.body.folderData.type
-    await folderService.createFolder({
+    await folderServices.createFolder({
       ...req.body.folderData,
 
       uuid: crypto.randomUUID(),
@@ -104,7 +104,7 @@ const folderController = {
       absolutePath: req.ogParentFolder!.absolutePath + '/' + req.body.folderData.name, 
     })
     .then(async (folderData: Folder) => {
-      await folderService.incrementFolderSize({ uuid: req.ogParentFolder!.uuid });
+      await folderServices.incrementFolderSize({ uuid: req.ogParentFolder!.uuid });
       return res.send({ folderData });
     }) 
     .catch((err) => {
@@ -125,15 +125,15 @@ const folderController = {
       return req.body.folderData.absolutePath + childFolder.absolutePath!.slice(originalFolder.absolutePath!.length, childFolder.absolutePath!.length);
     }
     
-    await folderService.updateFolderNameAndPath(req.body.folderData)
+    await folderServices.updateFolderNameAndPath(req.body.folderData)
     .then(async (folderData: Folder) => {
-      await folderService.getFoldersByPathBeginning(originalFolder, req.ogDrive!)
+      await folderServices.getFoldersByPathBeginning(originalFolder, req.ogDrive!)
       .then(async (folders: Folder[]) => {
         folders = folders.map(childFolder => ({ ...childFolder, absolutePath: getNewAbsolutePath(childFolder) }))
 
         await Promise.allSettled(
           folders.map(async (folder: Folder) => {
-            return await folderService.updateFolderNameAndPath(folder);
+            return await folderServices.updateFolderNameAndPath(folder);
           })
         )
         .then(() => {
@@ -155,20 +155,20 @@ const folderController = {
       return req.body.folderData.absolutePath + childFolder.absolutePath!.slice(originalFolder.absolutePath!.length, childFolder.absolutePath!.length);
     }
     
-    await folderService.updateFolderParentAndPath(req.body.folderData)
+    await folderServices.updateFolderParentAndPath(req.body.folderData)
     .then(async (folderData: Folder) => {
-      await folderService.getFoldersByPathBeginning(req.ogFolder!, req.ogDrive!)
+      await folderServices.getFoldersByPathBeginning(req.ogFolder!, req.ogDrive!)
       .then(async (folders: Folder[]) => {
         folders = folders.map(childFolder => ({ ...childFolder, absolutePath: getNewAbsolutePath(childFolder) }))
 
         await Promise.allSettled(
           folders.map(async folder => {
-            return await folderService.updateFolderParentAndPath(folder);
+            return await folderServices.updateFolderParentAndPath(folder);
           })
         )
         .then(async () => {
-          await folderService.decrementFolderSize({ uuid: originalFolder.parentUuid! });
-          await folderService.incrementFolderSize({ uuid: req.body.folderData.uuid });
+          await folderServices.decrementFolderSize({ uuid: originalFolder.parentUuid! });
+          await folderServices.incrementFolderSize({ uuid: req.body.folderData.uuid });
           return res.send({ folderData });
         })
       })
@@ -180,9 +180,9 @@ const folderController = {
   },
 
   removeFolder: async (req: Request, res: Response): Promise<any> => {
-    await folderService.updateFolderIsRemoved({ ...req.body.folderData, isRemoved: true })
+    await folderServices.updateFolderIsRemoved({ ...req.body.folderData, isRemoved: true })
     .then(async (folderData: Folder) => {
-      await folderService.decrementFolderSize({ uuid: req.body.folderData.parentUuid });
+      await folderServices.decrementFolderSize({ uuid: req.body.folderData.parentUuid });
       return res.send({ folderData });
     }) 
     .catch((err: any) => {
@@ -192,9 +192,9 @@ const folderController = {
   },
 
   recoverFolder: async (req: Request, res: Response): Promise<any> => {
-    await folderService.updateFolderIsRemoved({ ...req.body.folderData, isRemoved: false })
+    await folderServices.updateFolderIsRemoved({ ...req.body.folderData, isRemoved: false })
     .then(async (folderData: Folder) => {
-      await folderService.incrementFolderSize({ uuid: req.body.folderData.parentUuid });
+      await folderServices.incrementFolderSize({ uuid: req.body.folderData.parentUuid });
       return res.send({ folderData });
     }) 
     .catch((err: any) => {
@@ -208,7 +208,7 @@ const folderController = {
 
     const findChildren = async (parentFolder: Folder): Promise<void> => {
       return new Promise<void>(async function(resolve, reject) {
-        await folderService.getFoldersByParent(parentFolder, req.body.driveData)
+        await folderServices.getFoldersByParent(parentFolder, req.body.driveData)
         .then(async (folders: Folder[]) => {
           if (folders.length > 0) {
             await Promise.allSettled(
@@ -229,13 +229,13 @@ const folderController = {
 
     const deleteFiles = async (): Promise<void> => {
       return new Promise<void>(async function(resolve, reject) {
-        await fileService.getFilesByParentUuids(foldersToDeleteUuids)
+        await fileServices.getFilesByParentUuids(foldersToDeleteUuids)
         .then(async (files: File[]) => {
-          await fileService.deleteFilesByParentUuids(foldersToDeleteUuids)
+          await fileServices.deleteFilesByParentUuids(foldersToDeleteUuids)
           .then(async () => {
             await Promise.allSettled(
               files.map(async (file: File) => {
-                return await diskService.deleteFileOnDisk(file);
+                return await diskServices.deleteFileOnDisk(file);
               })
             )
             resolve(); 
@@ -250,8 +250,8 @@ const folderController = {
     await findChildren(req.ogFolder!)
     .then(async () => {
       await Promise.allSettled([
-        await bookmarkService.deleteBookmarksByFoldersUuids(req.ogUser!, foldersToDeleteUuids),
-        await folderService.deleteFoldersByFoldersUuids(foldersToDeleteUuids),
+        await bookmarkServices.deleteBookmarksByFoldersUuids(req.ogUser!, foldersToDeleteUuids),
+        await folderServices.deleteFoldersByFoldersUuids(foldersToDeleteUuids),
         await deleteFiles()
       ])
       .then(() => {

@@ -6,11 +6,11 @@ import http from 'http';
 import fs from 'fs';
 import dotenv from 'dotenv';
 
-import authRouter from '@/routes/authRoute';
-import driveRouter from './routes/driveRoute';
-import bookmarkRouter from '@/routes/bookmarkRoute'
-import fileRouter from './routes/fileRoute';
-import folderRouter from './routes/folderRoute';
+import authRoutes from '@/routes/authRoutes';
+import driveRoutes from '@/routes/driveRoutes';
+import bookmarkRoutes from '@/routes/bookmarkRoutes'
+import fileRoutes from '@/routes/fileRoutes';
+import folderRoutes from '@/routes/folderRoutes';
 
 
 dotenv.config();
@@ -37,11 +37,11 @@ app.use(express.urlencoded({
 app.use(morgan('dev'));
 app.use(cookieParser());
 
-app.use('/auth/', authRouter);
-app.use('/drive/', driveRouter);
-app.use('/bookmark/', bookmarkRouter);
-app.use('/file/', fileRouter);
-app.use('/folder/', folderRouter);
+app.use('/auth/', authRoutes);
+app.use('/drive/', driveRoutes);
+app.use('/bookmark/', bookmarkRoutes);
+app.use('/file/', fileRoutes);
+app.use('/folder/', folderRoutes);
 
 
 const server = http.createServer(app);

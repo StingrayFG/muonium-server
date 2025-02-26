@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import { User } from '@prisma/client';
 
 
-const authMiddleware = {
+const authMiddlewares = {
   
   authenticateJWT: async (req: Request, res: Response, next: NextFunction): Promise<any> => { 
     const authHeader = req.headers.authorization;
@@ -106,4 +106,4 @@ const authMiddleware = {
   
 }
 
-export default authMiddleware;
+export default authMiddlewares;

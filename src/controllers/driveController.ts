@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 
-import driveService from '@/services/driveService';
+import driveServices from '@/services/driveServices';
 
 import { Drive } from '@prisma/client';
 
@@ -8,7 +8,7 @@ import { Drive } from '@prisma/client';
 const driveController = {
 
   getDrive: async (req: Request, res: Response): Promise<any> => {
-    await driveService.getDriveByUser(req.ogUser!)
+    await driveServices.getDriveByUser(req.ogUser!)
     .then((driveData: (Drive | null)) => {
       return res.send({ driveData });
     })

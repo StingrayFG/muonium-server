@@ -7,7 +7,7 @@ import { UuidOnly } from '@/types/UuidOnly';
 import { BatchPayload } from '@/types/prisma/BatchPayload';
 
 
-const fileService = {
+const fileServices = {
 
   checkIfNameIsAlreadyUsed: async (fileData: (File | FileData)): Promise<boolean> => {
     return new Promise<boolean>(async (resolve, reject) => {
@@ -230,4 +230,4 @@ const fileService = {
 
 }
 
-export default fileService;
+export default fileServices;
