@@ -7,8 +7,8 @@ import { UserData } from '@/types/UserData';
 
 
 const userServices = {
-  getUser: async (userData: (User | UserData)): Promise<UserData> => {
-    return new Promise<UserData>(async (resolve, reject) => {
+  getUser: async (userData: (User | UserData)): Promise<User> => {
+    return new Promise<User>(async (resolve, reject) => {
       if (userData.password) {
         await prisma.user.findUnique({
           where: {
@@ -16,12 +16,11 @@ const userServices = {
           }
         })
         .then((user: (User | null)) => {
-          if (user) { 
-            if (bcrypt.compareSync(userData.password!, user.password)) { 
-              resolve(user);
-            } else {
-              reject();
-            }
+          if (user &&
+          user.password &&
+          bcrypt.compareSync(userData.password!, user.password)
+          ) { 
+            resolve(user);
           } else {
             reject();
           }
