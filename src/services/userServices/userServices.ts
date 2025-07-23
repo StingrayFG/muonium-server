@@ -9,46 +9,44 @@ import { UserData } from '@/types/UserData';
 const userServices = {
   getUser: async (userData: (User | UserData)): Promise<User> => {
     return new Promise<User>(async (resolve, reject) => {
-      if (userData.password) {
-        await prisma.user.findUnique({
+      try {
+        const user: User | null = await prisma.user.findUnique({
           where: {
             login: userData.login,
           }
         })
-        .then((user: (User | null)) => {
-          if (user &&
-          user.password &&
-          bcrypt.compareSync(userData.password!, user.password)
-          ) { 
-            resolve(user);
-          } else {
-            reject();
-          }
-        })
-        .catch((err: any) => {
-          console.log(err);
-          reject();
-        })   
-      } else {
-        reject();
+
+        if (user &&
+        user.password &&
+        bcrypt.compareSync(userData.password!, user.password)
+        ) { 
+          resolve(user);
+        } else {
+          reject(404);
+        }
+
+      } catch (err: any) {
+        console.log(err);
+        reject(err);
       }
     })
   },
 
   createUser: async (userData: User): Promise<User> => {
     return new Promise<User>(async function(resolve, reject) {
-      await prisma.user.create({
-        data: userData
-      })
-      .then((user: User) => {
+      try {
+        const user: User = await prisma.user.create({
+          data: userData
+        })
+
         resolve(user);
-      })
-      .catch((err: any) => {
+
+      } catch (err: any) {
         console.log(err);
-        reject();
-      })
+        reject(err);
+      }
     })
   }
 }
 
-export default userServices
+export default userServices;

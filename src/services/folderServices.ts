@@ -4,224 +4,228 @@ import { instance as prisma } from '@/instances/prisma'
 
 import { FolderData } from '@/types/FolderData';
 import { UuidOnly } from '@/types/UuidOnly';
-import { BatchPayload } from '@/types/prisma/BatchPayload';
 
 
 const folderServices = {
 
   checkIfNameIsAlreadyUsed: async (folderData: (Folder | FolderData)): Promise<boolean> => {
     return new Promise<boolean>(async (resolve, reject) => {
-      await prisma.folder.findFirst({
-        where: {
-          name: folderData.name,
-          parentUuid: folderData.parentUuid,
-          isRemoved: false
-        },
-      })
-      .then((folder: (Folder | null)) => {
+      try {
+        const folder: Folder | null = await prisma.folder.findFirst({
+          where: {
+            name: folderData.name,
+            parentUuid: folderData.parentUuid,
+            isRemoved: false
+          },
+        })
+  
         if (folder) {
           resolve(true);
         } else {
           resolve(false);
         }
-      })
-      .catch((err: any) => {
-        reject();
-      })
+      } catch (err: any) {
+        console.log(err);
+        reject(err);
+      }
     })
   },
 
-  getParentFolder: async (childData: (Folder | FolderData)): Promise<(Folder | null)> => {
-    return new Promise<(Folder | null)>(async (resolve, reject) => {
-      if (childData.parentUuid) {
-        await prisma.folder.findUnique({
+  getParentFolder: async (childData: (Folder | FolderData)): Promise<Folder> => {
+    return new Promise<Folder>(async (resolve, reject) => {
+      try {
+        const folder: Folder | null = await prisma.folder.findUnique({
           where: {
-            uuid: childData.parentUuid
+            uuid: childData.parentUuid!
           }
         })
-        .then((folder: (Folder | null)) => {
-          resolve(folder); 
-        })
-        .catch((err: any) => {
-          console.log(err);
-          reject();
-        })
-      } else {
-        reject();
-      } 
+  
+        if (folder) {
+          resolve(folder);
+        } else {
+          reject(404);
+        }
+      } catch (err: any) {
+        console.log(err);
+        reject(err);
+      }
     })
   },
 
-  getFolderByUuid: async (folderData: UuidOnly): Promise<(Folder | null)> => {
-    return new Promise<(Folder | null)>(async (resolve, reject) => {
-      await prisma.folder.findUnique({
-        where: {
-          uuid: folderData.uuid
+  getFolderByUuid: async (folderData: UuidOnly): Promise<Folder> => {
+    return new Promise<Folder>(async (resolve, reject) => {
+      try {
+        const folder: Folder | null = await prisma.folder.findUnique({
+          where: {
+            uuid: folderData.uuid
+          }
+        })
+  
+        if (folder) {
+          resolve(folder);
+        } else {
+          reject(404);
         }
-      })
-      .then((folder: (Folder | null)) => {
-        resolve(folder); 
-      })
-      .catch((err: any) => {
+      } catch (err: any) {
         console.log(err);
-        reject();
-      })
+        reject(err);
+      }
     })
   },
 
-  getFolderByPath: async (folderData: (Folder | FolderData), driveData: UuidOnly): Promise<(Folder | null)> => {
-    return new Promise<(Folder | null)>(async (resolve, reject) => {
-      await prisma.folder.findFirst({
-        where: {
-          driveUuid: driveData.uuid,
-          absolutePath: folderData.absolutePath
+  getFolderByPath: async (folderData: (Folder | FolderData), driveData: UuidOnly): Promise<Folder> => {
+    return new Promise<Folder>(async (resolve, reject) => {
+      try {
+        const folder: Folder | null =  await prisma.folder.findFirst({
+          where: {
+            driveUuid: driveData.uuid,
+            absolutePath: folderData.absolutePath
+          }
+        })
+  
+        if (folder) {
+          resolve(folder);
+        } else {
+          reject(404);
         }
-      })
-      .then((folder: (Folder | null)) => {
-        resolve(folder); 
-      })
-      .catch((err: any) => {
+      } catch (err: any) {
         console.log(err);
-        reject();
-      })
+        reject(err);
+      }
     })
   },
 
   getFoldersByParent: async (parentFolderData: (Folder | FolderData), driveData: UuidOnly): Promise<Folder[]> => {
     return new Promise<Folder[]>(async (resolve, reject) => {
-      await prisma.folder.findMany({
-        orderBy: [
-          {
-            name: 'asc',
-          },
-        ],
-        where: {
-          driveUuid: driveData.uuid,
-          parentUuid: parentFolderData.uuid,
-          isRemoved: false
-        }
-      })
-      .then((folders: (Folder[])) => {
-        resolve(folders); 
-      })
-      .catch((err: any) => {
+      try {
+        const folders: Folder[] = await prisma.folder.findMany({
+          orderBy: [
+            {
+              name: 'asc',
+            },
+          ],
+          where: {
+            driveUuid: driveData.uuid,
+            parentUuid: parentFolderData.uuid,
+            isRemoved: false
+          }
+        })
+        resolve(folders);
+
+      } catch (err: any) {
         console.log(err);
-        reject();
-      })
+        reject(err);
+      }
     })
   },
 
   getFoldersByPathBeginning: async (parentFolderData: (Folder | FolderData), driveData: UuidOnly): Promise<Folder[]> => {
     return new Promise<Folder[]>(async (resolve, reject) => {
-      if (parentFolderData.absolutePath) {
-        await prisma.folder.findMany({
+      try {
+        const folders: Folder[] = await prisma.folder.findMany({
           where: {
             driveUuid: driveData.uuid,
             NOT: {
               uuid: parentFolderData.uuid,
             },
             absolutePath: {
-              startsWith: parentFolderData.absolutePath,
+              startsWith: parentFolderData.absolutePath!,
             },
           },
         })
-        .then((folders: (Folder[])) => {
-          resolve(folders); 
-        })
-        .catch((err: any) => {
-          console.log(err);
-          reject();
-        })
-      } else {
-        reject();
+        resolve(folders);
+
+      } catch (err: any) {
+        console.log(err);
+        reject(err);
       }
     })
   },
 
   getRemovedFolders: async (driveData: UuidOnly): Promise<Folder[]> => {
     return new Promise<Folder[]>(async (resolve, reject) => {
-      await prisma.folder.findMany({
-        orderBy: [
-          {
-            name: 'asc',
+      try {
+        const folders: Folder[] = await prisma.folder.findMany({
+          orderBy: [
+            {
+              name: 'asc',
+            },
+          ],
+          where: {
+            driveUuid: driveData.uuid,
+            isRemoved: true,
           },
-        ],
-        where: {
-          driveUuid: driveData.uuid,
-          isRemoved: true,
-        },
-      })
-      .then((folders: (Folder[])) => {
-        resolve(folders); 
-      })
-      .catch((err: any) => {
+        })
+        resolve(folders);
+
+      } catch (err: any) {
         console.log(err);
-        reject();
-      })
+        reject(err);
+      }
     })
   },
 
   createFolder: async (folderData: Folder): Promise<Folder> => {
     return new Promise<Folder>(async (resolve, reject) => {
-      await prisma.folder.create({
-        data: folderData
-      })
-      .then((folder: Folder) => {
+      try {
+        const folder: Folder = await prisma.folder.create({
+          data: folderData
+        })
         resolve(folder);
-      })
-      .catch((err: any) => {
+
+      } catch (err: any) {
         console.log(err);
-        reject();
-      })
+        reject(err);
+      }
     })
   },
 
   updateFolderParentAndPath: async (folderData: (Folder | FolderData)): Promise<Folder> => {
     return new Promise<Folder>(async (resolve, reject) => {
-      await prisma.folder.update({
-        where: {
-          uuid: folderData.uuid,
-        },
-        data: {
-          parentUuid: folderData.parentUuid,
-          absolutePath: folderData.absolutePath
-        },
-      })
-      .then((folder: Folder) => {
-        resolve(folder); 
-      })
-      .catch((err: any) => {
+      try {
+        const folder: Folder = await prisma.folder.update({
+          where: {
+            uuid: folderData.uuid,
+          },
+          data: {
+            parentUuid: folderData.parentUuid,
+            absolutePath: folderData.absolutePath
+          },
+        })
+        resolve(folder);
+
+      } catch (err: any) {
         console.log(err);
-        reject();
-      })
+        reject(err);
+      }
     })
   },
 
   updateFolderNameAndPath: async (folderData: (Folder | FolderData)): Promise<Folder> => {
     return new Promise<Folder>(async (resolve, reject) => {
-      await prisma.folder.update({
-        where: {
-          uuid: folderData.uuid,
-        },
-        data: {
-          name: folderData.name,
-          absolutePath: folderData.absolutePath
-        },
-      })
-      .then((folder: Folder) => {
-        resolve(folder); 
-      })
-      .catch((err: any) => {
+      try {
+        const folder: Folder = await prisma.folder.update({
+          where: {
+            uuid: folderData.uuid,
+          },
+          data: {
+            name: folderData.name,
+            absolutePath: folderData.absolutePath
+          },
+        })
+        resolve(folder);
+
+      } catch (err: any) {
         console.log(err);
-        reject();
-      })
+        reject(err);
+      }
     })
   },
 
   updateFolderSize: async (folderData: (Folder | FolderData)): Promise<Folder> => {
     return new Promise<Folder>(async (resolve, reject) => {
-      if (folderData.uuid && !['home', 'trash', '', null].includes(folderData.uuid)) {
-        await prisma.folder.update({
+      try {
+        const folder: Folder = await prisma.folder.update({
           where: {
             uuid: folderData.uuid,
           },
@@ -230,23 +234,19 @@ const folderServices = {
             size: folderData.size
           },
         })
-        .then((folder: Folder) => {
-          resolve(folder); 
-        })
-        .catch((err: any) => {
-          console.log(err);
-          reject();
-        })
-      } else {
-        reject();
+        resolve(folder);
+
+      } catch (err: any) {
+        console.log(err);
+        reject(err);
       }
     })
   },
 
   incrementFolderSize: async (folderData: (Folder | FolderData)): Promise<Folder | void> => {
     return new Promise<Folder | void>(async (resolve, reject) => {
-      if (folderData.uuid && !['home', 'trash', '', null].includes(folderData.uuid)) {
-        await prisma.folder.update({
+      try {
+        const folder: Folder = await prisma.folder.update({
           where: {
             uuid: folderData.uuid,
           },
@@ -255,25 +255,19 @@ const folderServices = {
             size: { increment: 1 }
           },
         })
-        .then((folder: Folder) => {
-          resolve(folder); 
-        })
-        .catch((err: any) => {
-          console.log(err);
-          reject();
-        })
-      } else if (['home', 'trash', '', null].includes(folderData.uuid)) {
-        resolve();
-      } else {
-        reject();
+        resolve(folder);
+
+      } catch (err: any) {
+        console.log(err);
+        reject(err);
       }
     })
   },
 
   decrementFolderSize: async (folderData: (Folder | FolderData)): Promise<(Folder | void)> => {
     return new Promise<(Folder | void)>(async (resolve, reject) => {
-      if (folderData.uuid && !['home', 'trash', '', null].includes(folderData.uuid)) {
-        await prisma.folder.update({
+      try {
+        const folder: Folder = await prisma.folder.update({
           where: {
             uuid: folderData.uuid,
           },
@@ -282,58 +276,53 @@ const folderServices = {
             size: { decrement: 1 }
           },
         })
-        .then((folder: Folder) => {
-          resolve(folder); 
-        })
-        .catch((err: any) => {
-          console.log(err);
-          reject();
-        })
-      } else if (['home', 'trash', '', null].includes(folderData.uuid)) {
-        resolve();
-      } else {
-        reject();
+        resolve(folder);
+
+      } catch (err: any) {
+        console.log(err);
+        reject(err);
       }
     })
   },
 
   updateFolderIsRemoved: async (folderData: (Folder | FolderData)): Promise<Folder> => {
     return new Promise<Folder>(async (resolve, reject) => {
-      await prisma.folder.update({
-        where: {
-          uuid: folderData.uuid,
-        },
-        data: {
-          isRemoved: folderData.isRemoved!,
-        },
-      })
-      .then((folder: Folder) => {
-        resolve(folder); 
-      })
-      .catch((err: any) => {
+      try {
+        const folder: Folder = await prisma.folder.update({
+          where: {
+            uuid: folderData.uuid,
+          },
+          data: {
+            isRemoved: folderData.isRemoved!,
+          },
+        })
+        resolve(folder);
+
+      } catch (err: any) {
         console.log(err);
-        reject();
-      })
+        reject(err);
+      }
     })
   },
 
-  deleteFoldersByFoldersUuids: async (folderUuids: string[]): Promise<number> => {
-    return new Promise<number>(async (resolve, reject) => {
-      await prisma.folder.deleteMany({
-        where: {
-          uuid: { in: folderUuids }
-        },
-      })
-      .then((res: BatchPayload) => {
-        resolve(res.count);
-      })
-      .catch((err: any) => {
+  deleteFoldersByFoldersUuids: async (folderUuids: string[]): Promise<void> => {
+    return new Promise<void>(async (resolve, reject) => {
+      try {
+        await prisma.folder.deleteMany({
+          where: {
+            uuid: { in: folderUuids }
+          },
+        })
+        resolve();
+
+      } catch (err: any) {
         console.log(err);
-        reject();
-      })
+        reject(err);
+      }
     })
   },
 
 }
+
 
 export default folderServices;

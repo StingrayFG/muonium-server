@@ -4,230 +4,230 @@ import { instance as prisma } from '@/instances/prisma'
 
 import { FileData } from '@/types/FileData';
 import { UuidOnly } from '@/types/UuidOnly';
-import { BatchPayload } from '@/types/prisma/BatchPayload';
 
 
 const fileServices = {
 
   checkIfNameIsAlreadyUsed: async (fileData: (File | FileData)): Promise<boolean> => {
     return new Promise<boolean>(async (resolve, reject) => {
-      await prisma.file.findFirst({
-        where: {
-          name: fileData.name,
-          parentUuid: fileData.parentUuid,
-          isRemoved: false,
-        },
-      })
-      .then((file: (File | null)) => {
+      try {
+        const file: File | null = await prisma.file.findFirst({
+          where: {
+            name: fileData.name,
+            parentUuid: fileData.parentUuid,
+            isRemoved: false,
+          },
+        })
+  
         if (file) {
           resolve(true);
         } else {
           resolve(false);
         }
-      })
-      .catch((err: any) => {
+      } catch (err: any) {
         console.log(err);
-        reject();
-      })  
+        reject(err);
+      }
     })
   },
 
-  getFile: async (fileData: UuidOnly): Promise<(File | null)> => {
-    return new Promise<(File | null)>(async (resolve, reject) => {
-      await prisma.file.findUnique({
-        where: {
-          uuid: fileData.uuid
+  getFile: async (fileData: UuidOnly): Promise<File> => {
+    return new Promise<File>(async (resolve, reject) => {
+      try {
+        const file: File | null = await prisma.file.findUnique({
+          where: {
+            uuid: fileData.uuid
+          }
+        })
+  
+        if (file) {
+          resolve(file);
+        } else {
+          reject(404);
         }
-      })
-      .then((file: (File | null)) => {
-        resolve(file);
-      })
-      .catch((err: any) => {
+      } catch (err: any) {
         console.log(err);
-        reject();
-      })  
+        reject(err);
+      }
     })
   },
 
   getFilesByParent: async (parentFolderData: UuidOnly, driveData: UuidOnly): Promise<File[]> => {
     return new Promise<File[]>(async (resolve, reject) => {
-      await prisma.file.findMany({
-        orderBy: [
-          {
-            name: 'asc',
-          },
-        ],
-        where: {
-          driveUuid: driveData.uuid,
-          parentUuid: parentFolderData.uuid,
-          isRemoved: false
-        }
-      })
-      .then((files: File[]) => {
+      try {
+        const files: File[] = await prisma.file.findMany({
+          orderBy: [
+            {
+              name: 'asc',
+            },
+          ],
+          where: {
+            driveUuid: driveData.uuid,
+            parentUuid: parentFolderData.uuid,
+            isRemoved: false
+          }
+        })
         resolve(files);
-      })
-      .catch((err: any) => {
+
+      } catch (err: any) {
         console.log(err);
-        reject();
-      })  
+        reject(err);
+      }
     })
   },
 
   getFilesByParentUuids: async (parentUuids: string[]): Promise<File[]> => {
     return new Promise<File[]>(async (resolve, reject) => {
-      await prisma.file.findMany({
-        where: {
-          parentUuid: { in: parentUuids }
-        },
-      })
-      .then((files: File[]) => {
+      try {
+        const files: File[] = await prisma.file.findMany({
+          where: {
+            parentUuid: { in: parentUuids }
+          },
+        })
         resolve(files);
-      })
-      .catch((err: any) => {
+        
+      } catch (err: any) {
         console.log(err);
-        reject();
-      })  
+        reject(err);
+      }
     })
   },
 
   getRemovedFiles: async (driveData: UuidOnly): Promise<File[]> => {
     return new Promise<File[]>(async (resolve, reject) => {
-      await prisma.file.findMany({
-        orderBy: [
-          {
-            name: 'asc',
+      try {
+        const files: File[] = await prisma.file.findMany({
+          orderBy: [
+            {
+              name: 'asc',
+            },
+          ],
+          where: {
+            driveUuid: driveData.uuid,
+            isRemoved: true,
           },
-        ],
-        where: {
-          driveUuid: driveData.uuid,
-          isRemoved: true,
-        },
-      })
-      .then((files: File[]) => {
+        })
         resolve(files);
-      })
-      .catch((err: any) => {
+        
+      } catch (err: any) {
         console.log(err);
-        reject();
-      })  
+        reject(err);
+      }
     })
   },
 
   createFile: async (fileData: File): Promise<File> => {
     return new Promise<File>(async (resolve, reject) => {
-      await prisma.file.create({
-        data: fileData
-      })
-      .then((file: File) => {
-        if (file) {
-          resolve(file);
-        } else {
-          reject();
-        }    
-      })
-      .catch((err: any) => {
+      try {
+        const file: File = await prisma.file.create({
+          data: fileData
+        })
+        resolve(file);
+
+      } catch (err: any) {
         console.log(err);
-        reject();
-      })  
+        reject(err);
+      }
     })
   },
 
   updateFileName: async (fileData: (File | FileData)): Promise<File> => {
     return new Promise<File>(async (resolve, reject) => {
-      await prisma.file.update({
-        where: {
-          uuid: fileData.uuid,
-        },
-        data: {
-          name: fileData.name,
-          nameExtension: fileData.nameExtension,
-          modificationDate: fileData.modificationDate,
-        },
-      })
-      .then((file: File) => {
-        resolve(file)
-      })
-      .catch((err: any) => {
+      try {
+        const file: File = await prisma.file.update({
+          where: {
+            uuid: fileData.uuid,
+          },
+          data: {
+            name: fileData.name,
+            nameExtension: fileData.nameExtension,
+            modificationDate: fileData.modificationDate,
+          },
+        })
+        resolve(file);
+        
+      } catch (err: any) {
         console.log(err);
-        reject();
-      })  
+        reject(err);
+      }
     })
   },
 
   updateFileParent: async (fileData: (File | FileData)): Promise<File> => {
     return new Promise<File>(async (resolve, reject) => {
-      await prisma.file.update({
-        where: {
-          uuid: fileData.uuid,
-        },
-        data: {
-          parentUuid: fileData.parentUuid,
-        },
-      })
-      .then((file: File) => {
-        resolve(file)
-      })
-      .catch((err: any) => {
+      try {
+        const file: File = await prisma.file.update({
+          where: {
+            uuid: fileData.uuid,
+          },
+          data: {
+            parentUuid: fileData.parentUuid,
+          },
+        })
+        resolve(file);
+        
+      } catch (err: any) {
         console.log(err);
-        reject();
-      })  
+        reject(err);
+      }
     })
   },
 
   updateFileIsRemoved: async (fileData: (File | FileData)): Promise<File> => {
     return new Promise<File>(async (resolve, reject) => {
-      await prisma.file.update({
-        where: {
-          uuid: fileData.uuid,
-        },
-        data: {
-          isRemoved: fileData.isRemoved!,
-        },
-      })
-      .then((file: File) => {
-        resolve(file)
-      })
-      .catch((err: any) => {
+      try {
+        const file: File = await prisma.file.update({
+          where: {
+            uuid: fileData.uuid,
+          },
+          data: {
+            isRemoved: fileData.isRemoved!,
+          },
+        })
+        resolve(file);
+        
+      } catch (err: any) {
         console.log(err);
-        reject();
-      })  
+        reject(err);
+      }
     })
   },
 
   deleteFile: async (fileData: UuidOnly): Promise<File> => {
     return new Promise<File>(async (resolve, reject) => {
-      await prisma.file.delete({
-        where: {
-          uuid: fileData.uuid,
-        },
-      })
-      .then((file: File) => {
-        resolve(file)
-      })
-      .catch((err: any) => {
+      try {
+        const file: File =await prisma.file.delete({
+          where: {
+            uuid: fileData.uuid,
+          },
+        })
+        resolve(file);
+        
+      } catch (err: any) {
         console.log(err);
-        reject();
-      })  
+        reject(err);
+      }
     })
   },
 
-  deleteFilesByParentUuids: async (parentUuids: string[]): Promise<number> => {
-    return new Promise<number>(async (resolve, reject) => {
-      await prisma.file.deleteMany({
-        where: {
-          parentUuid: { in: parentUuids }
-        },
-      })
-      .then((res: BatchPayload) => {
-        resolve(res.count);
-      })
-      .catch((err: any) => {
+  deleteFilesByParentUuids: async (parentUuids: string[]): Promise<void> => {
+    return new Promise<void>(async (resolve, reject) => {
+      try {
+        await prisma.file.deleteMany({
+          where: {
+            parentUuid: { in: parentUuids }
+          },
+        })
+        resolve();
+
+      } catch (err: any) {
         console.log(err);
-        reject();
-      })
+        reject(err);
+      }
     })
   },
 
 }
+
 
 export default fileServices;
