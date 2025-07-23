@@ -17,172 +17,175 @@ const fileController = {
     return res.send({ downloadToken });
   },
 
-  downloadFile: async (req: Request, res: Response) => {
+  downloadFile: async (req: Request, res: Response): Promise<any> => {
     /* Verify the download token and send the file if the token is valid */
-    jwt.verify(req.params.token, process.env.ACCESS_TOKEN_SECRET, async (err: any, file: any) => {
-      console.log(err, file)
-      if (err) { 
-        return res.sendStatus(403); 
-      } else if (file.uuid != req.params.uuid) { 
-        return res.sendStatus(403); 
-      } else if ((Math.floor(Date.now() / 1000) - file.iat) > parseInt(process.env.DOWNLOAD_LINK_VALID_FOR, 10)) { 
-        return res.sendStatus(410); 
-      } else {
-        await fileServices.getFile({ uuid: req.params.uuid })
-        .then((fileData: (File | null)) => {
+    try {
+      jwt.verify(req.params.token, process.env.ACCESS_TOKEN_SECRET, async (err: any, file: any) => {
+        console.log(err, file)
+        if (err) { 
+          return res.sendStatus(403); 
+        } else if (file.uuid != req.params.uuid) { 
+          return res.sendStatus(403); 
+        } else if ((Math.floor(Date.now() / 1000) - file.iat) > parseInt(process.env.DOWNLOAD_LINK_VALID_FOR, 10)) { 
+          return res.sendStatus(410); 
+        } else {
+          const fileData: File | null = await fileServices.getFile({ uuid: req.params.uuid })
           if (fileData) {
             res.set('Content-Disposition', `attachment; filename=${ fileData.name }`);
             return res.sendFile(fileData.name + '.' + fileData.nameExtension, { root: 'uploads/' });
           } else {
             return res.status(404);
           }
-        })
-        .catch((err: any) => {
-          console.log(err);
-          return res.sendStatus(500);
-        })
-      } 
-    })
+        } 
+      })
+    } catch(err: any) {
+      console.log(err);
+      return res.sendStatus(500);
+    }
   },
 
   uploadFile: async (req: Request, res: Response): Promise<any> => {
-    await fileServices.createFile({
-      ...req.body.fileData,
-
-      uuid: crypto.randomUUID(),
-
-      nameExtension: req.file!.filename.split('.').pop(),
-
-      isRemoved: false,
-    })
-    .then(async (fileData: File) => {
-      await driveServices.updateDriveUsedSpace(req.ogDrive!, req.file!.size)
-      .then(async () => {
-        await folderServices.incrementFolderSize({ uuid: req.body.fileData.parentUuid });
-        return res.send({ fileData });
+    try {
+      const fileData: File = await fileServices.createFile({
+        ...req.body.fileData,
+  
+        uuid: crypto.randomUUID(),
+  
+        nameExtension: req.file!.filename.split('.').pop(),
+  
+        isRemoved: false,
       })
-    }) 
-    .catch((err: any) => {
+
+      await driveServices.updateDriveUsedSpace(req.ogDrive!, req.file!.size)
+
+      await folderServices.incrementFolderSize({ uuid: req.body.fileData.parentUuid })
+
+      return res.send({ fileData });
+
+    } catch(err: any) {
       console.log(err);
       return res.sendStatus(500);
-    }) 
+    }
   },
 
   copyFile: async (req: Request, res: Response): Promise<any> => {
-    /* req.ogFile is the original file object from the database, and it is used to prevent spoofing */
-    const originalFile: File = req.ogFile!;
+    try {
+      /* req.ogFile is the original file object from the database, and it is used instead of the file object sent in the request */
+      const originalFile: File = req.ogFile!;
 
-    const modificationDate = Date.now();
+      const modificationDate = Date.now();
 
-    if ((originalFile!.parentUuid === req.body.fileData.parentUuid) && (originalFile!.name === req.body.fileData.name)) {
-      return res.sendStatus(409);
-    } else {
-      req.body.fileData.uuid = crypto.randomUUID();
-      req.body.fileData.nameExtension = modificationDate + '';
-      req.body.fileData.modificationDate = new Date(modificationDate);    
-      req.body.fileData.creationDate = new Date(modificationDate);  
-      delete req.body.fileData.type;  
-    }
+      if ((originalFile!.parentUuid === req.body.fileData.parentUuid) && (originalFile!.name === req.body.fileData.name)) {
+        return res.sendStatus(409);
+      } else {
+        req.body.fileData.uuid = crypto.randomUUID();
+        req.body.fileData.nameExtension = modificationDate + '';
+        req.body.fileData.modificationDate = new Date(modificationDate);    
+        req.body.fileData.creationDate = new Date(modificationDate);  
+        delete req.body.fileData.type;  
+      }
 
-    await diskServices.copyFileOnDisk(originalFile!, req.body.fileData)
-    .then(async () => {
-      await fileServices.createFile(req.body.fileData) 
-      .then(async (fileData: File) => {
-        await driveServices.updateDriveUsedSpace(req.ogDrive!, originalFile!.size)
-        .then(async () => {
-          await folderServices.incrementFolderSize({ uuid: req.body.fileData.parentUuid });
-          return res.send({ fileData });
-        })
-      })
-    })
-    .catch((err: any) => {
-      console.log(err)
+      await diskServices.copyFileOnDisk(originalFile!, req.body.fileData)
+
+      const fileData: File = await fileServices.createFile(req.body.fileData) 
+  
+      await driveServices.updateDriveUsedSpace(req.ogDrive!, originalFile!.size)
+
+      await folderServices.incrementFolderSize({ uuid: req.body.fileData.parentUuid });
+
+      return res.send({ fileData });
+
+    } catch(err: any) {
+      console.log(err);
       return res.sendStatus(500);
-    }) 
+    }
   },
 
   renameFile: async (req: Request, res: Response): Promise<any> => {
-    /* req.ogFile is the original file object from the database, and it is used to prevent spoofing */
-    const originalFile: File = req.ogFile!;
+    try {
+      const originalFile: File = req.ogFile!;
 
-    const modificationDate = Date.now();
-    req.body.fileData.nameExtension = modificationDate + '';
-    req.body.fileData.modificationDate = new Date(modificationDate);
+      const modificationDate = Date.now();
+      req.body.fileData.nameExtension = modificationDate + '';
+      req.body.fileData.modificationDate = new Date(modificationDate);
 
-    await diskServices.copyFileOnDisk(originalFile!, req.body.fileData)
-    .then(async () => {
-      await fileServices.updateFileName(req.body.fileData)
-      .then(async (fileData: File) => {
-        await diskServices.deleteFileOnDisk(originalFile!)
-        .then(() => {
-          return res.send({ fileData });
-        })   
-      })
-    })
-    .catch((err: any) => {
-      console.log(err)
+      await diskServices.copyFileOnDisk(originalFile!, req.body.fileData)
+
+      const fileData: File = await fileServices.updateFileName(req.body.fileData)
+
+      await diskServices.deleteFileOnDisk(originalFile!)
+
+      return res.send({ fileData });
+
+    } catch(err: any) {
+      console.log(err);
       return res.sendStatus(500);
-    }) 
+    }
   },
 
   moveFile: async (req: Request, res: Response): Promise<any> => {
-    const originalFile: File = req.ogFile!;
+    try {
+      const originalFile: File = req.ogFile!;
 
-    await fileServices.updateFileParent(req.body.fileData)
-    .then(async (fileData: File) => {
+      const fileData: File = await fileServices.updateFileParent(req.body.fileData)
+
       await folderServices.decrementFolderSize({ uuid: originalFile!.parentUuid! });
+
       await folderServices.incrementFolderSize({ uuid: req.body.fileData.parentUuid });
+
       return res.send({ fileData });
-    })
-    .catch((err: any) => {
-      console.log(err)
+
+    } catch(err: any) {
+      console.log(err);
       return res.sendStatus(500);
-    }) 
+    }
   },
 
   removeFile: async (req: Request, res: Response): Promise<any> => {
-    await fileServices.updateFileIsRemoved({ ...req.body.fileData, isRemoved: true })
-    .then(async (fileData: File) => {
+    try {
+      const fileData: File = await fileServices.updateFileIsRemoved({ ...req.body.fileData, isRemoved: true })
+
       await folderServices.decrementFolderSize({ uuid: req.body.fileData.parentUuid });
+
       return res.send({ fileData });
-    })
-    .catch((err: any) => {
-      console.log(err)
+      
+    } catch(err: any) {
+      console.log(err);
       return res.sendStatus(500);
-    }) 
+    }
   },
 
   recoverFile: async (req: Request, res: Response): Promise<any> => {
-    await fileServices.updateFileIsRemoved({ ...req.body.fileData, isRemoved: false })
-    .then(async (fileData: File) => {
+    try {
+      const fileData: File = await fileServices.updateFileIsRemoved({ ...req.body.fileData, isRemoved: false })
+
       await folderServices.incrementFolderSize({ uuid: req.body.fileData.parentUuid });
+
       return res.send({ fileData });
-    })
-    .catch((err: any) => {
-      console.log(err)
+      
+    } catch(err: any) {
+      console.log(err);
       return res.sendStatus(500);
-    }) 
+    }
   },
 
   deleteFile: async (req: Request, res: Response): Promise<any> => {
-    await fileServices.deleteFile(req.ogFile!) 
-    .then(async (fileData: File) => {
-      /* req.ogFile is the original file object from the database, and it is used instead of 
-      req.body.fileData to prevent the file size spoofing */
+    try {
+      const fileData: File = await fileServices.deleteFile(req.ogFile!) 
+
       await driveServices.updateDriveUsedSpace(req.ogDrive!, -req.ogFile!.size) 
-      .then(async () => {
-        await diskServices.deleteFileOnDisk(req.ogFile!)
-        .then(() => {
-          return res.send({ fileData });
-        })      
-      })
-    }) 
-    .catch((err: any) => {
-      console.log(err)
+
+      await diskServices.deleteFileOnDisk(req.ogFile!)
+
+      return res.send({ fileData });
+      
+    } catch(err: any) {
+      console.log(err);
       return res.sendStatus(500);
-    }) 
+    }
   },
 
 }
+
 
 export default fileController;

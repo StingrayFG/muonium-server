@@ -12,46 +12,43 @@ const bookmarkController = {
 
   getBookmarks: async (req: Request, res: Response): Promise<any> => {
     // Used to find the bookmarked folder in the database, then add it to the passed bookmark object, then return it
-    const getFolder = async (bookmark: BookmarkData) => { 
-      return new Promise<void>(async (resolve, reject) => {
-        await folderServices.getFolderByUuid({ uuid: bookmark.folderUuid })    
-        .then((folder: (Folder | null)) => {
+    const assembleBookmark = async (bookmark: BookmarkData): Promise<BookmarkData> => { 
+      return new Promise<BookmarkData>(async (resolve, reject) => {
+        try {
+          const folder = await folderServices.getFolderByUuid({ uuid: bookmark.folderUuid })    
           bookmark.uuid = bookmark.ownerUuid + bookmark.folderUuid;
           bookmark.folder = folder;
-          bookmark.type = 'bookmark';
+          bookmark.type = 'bookmark';     
+          resolve(bookmark);
 
-          resolve();
-        })
-        .catch((err: any) => {
-          resolve();
-        })
+        } catch (err) {
+          reject(null);
+        }
       })
     }
 
-    await bookmarkServices.getBookmarks(req.ogUser!)
-    .then(async (bookmarksData: BookmarkData[]) => {
+    try {
+      const bookmarksData: BookmarkData[] = await bookmarkServices.getBookmarks(req.ogUser!)
+
       await Promise.allSettled(
         bookmarksData.map(async bookmark => {
-          return await getFolder(bookmark)
+          bookmark = await assembleBookmark(bookmark)
         })
+        .filter(bookmark => (bookmark !== null))
       )
-      .then(() => {
-        return res.send({ bookmarksData });
-      })
-      .catch((err: any) => {
-        console.log(err);
-        return res.send({ bookmarksData });
-      })
-    })
-    .catch((err: any) => {
+
+      return res.send({ bookmarksData });
+
+    } catch(err: any) {
       console.log(err);
-      return res.sendStatus(404);
-    })
+      return res.sendStatus(500);
+    }
   },
 
   createBookmark: async (req: Request, res: Response): Promise<any> => {
-    await bookmarkServices.getBookmarks(req.ogUser!)
-    .then(async (bookmarksData : BookmarkData[]) => {
+    try {
+      const bookmarksData: BookmarkData[] = await bookmarkServices.getBookmarks(req.ogUser!)
+
       // Determine the newly created bookmark position, based on how many bookmarks the respective user has
       if (!req.body.bookmarkData.position) { 
         if (bookmarksData.length === 0) {
@@ -61,38 +58,28 @@ const bookmarkController = {
         }
       }
 
-      await bookmarkServices.createBookmark({
+      const bookmarkData: Bookmark = await bookmarkServices.createBookmark({
         folderUuid: req.body.bookmarkData.folderUuid,
         ownerUuid: req.ogUser!.uuid,
         position: req.body.bookmarkData.position
       })
-      .then(async (bookmarkData: Bookmark) => {
-        /* Increment the position of already existing bookmarks, whose current position is greater than or equal to
-        the position of the newly created bookmark */
-        await bookmarkServices.moveBookmarksBelow(req.ogUser!, req.body.bookmarkData) 
-        .then(() => {
-          return res.send({ bookmarkData });
-        })
-        .catch((err: any) => {
-          console.log(err);
-          return res.send({ bookmarkData });
-        })
-      })
-      .catch((err: any) => {
-        console.log(err);
-        return res.sendStatus(409);
-      })
 
-    })
-    .catch((err: any) => {
+      /* Increment the position of already existing bookmarks, whose current position is greater than or equal to
+      the position of the newly created bookmark */
+      await bookmarkServices.moveBookmarksBelow(req.ogUser!, req.body.bookmarkData) 
+
+      return res.send({ bookmarkData });
+
+    } catch(err: any) {
       console.log(err);
       return res.sendStatus(500);
-    })
+    }
   },
 
   moveBookmark: async (req: Request, res: Response): Promise<any> => {
-    await bookmarkServices.updateBookmarkPosition(req.ogUser!, req.body.bookmarkData)
-    .then(async (bookmarkData : BookmarkData | null) => {
+    try {
+      const bookmarkData: Bookmark = await bookmarkServices.updateBookmarkPosition(req.ogUser!, req.body.bookmarkData)
+
       let moveFunction;
 
       /* Choose how the user's bookmarks' positions will be changed
@@ -103,46 +90,29 @@ const bookmarkController = {
         moveFunction = bookmarkServices.moveBookmarksBelowInRange;
       }
 
-      // req.ogBookmark is the original bookmark, req.body.bookmarkData is the edited one
       await moveFunction(req.ogUser!, req.ogBookmark!, req.body.bookmarkData) 
-      .then(() => {
-        return res.send({ bookmarkData });
-      })
-      .catch(async (err: any) => {
-        console.log(err)
-        // Return the moved bookmark's position if updating orher bookmarks' positions fails
-        await bookmarkServices.updateBookmarkPosition(req.ogUser!, req.body.bookmark) 
-        .then(() => {
-          return res.sendStatus(500);
-        })
-      })
-    })
-    .catch((err: any) => {
+
+      return res.send({ bookmarkData });
+
+    } catch(err: any) {
       console.log(err);
-      return res.sendStatus(409);
-    })
+      return res.sendStatus(500);
+    }
   },
 
   deleteBookmark: async (req: Request, res: Response): Promise<any> => {
-    await bookmarkServices.deleteBookmark(req.ogUser!, req.ogBookmark!)
-    .then(async (bookmarkData : (BookmarkData | null)) => {
-      /* Decrement the position of already existing bookmarks, whose current position is greater than or equal to
-      the position of the deleted bookmark */
-      await bookmarkServices.moveBookmarksAbove(req.ogUser!, req.ogBookmark!) 
-        .then(() => {
-          return res.send({ bookmarkData });
-        })
-        .catch((err: any) => {
-          console.log(err);
-          return res.send({ bookmarkData });
-        })
-    })
-    .catch((err: any) => {
+    try {
+      const bookmarkData: Bookmark = await bookmarkServices.deleteBookmark(req.ogUser!, req.ogBookmark!)
+
+      return res.send({ bookmarkData });
+
+    } catch(err: any) {
       console.log(err);
       return res.sendStatus(404);
-    })
+    }
   },
 
 }
+
 
 export default bookmarkController;

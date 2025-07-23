@@ -17,252 +17,282 @@ import diskServices from '@/services/diskServices';
 const folderController = {
 
   getFolderWithChildren: async (req: Request, res: Response): Promise<any> => {
-    let folderWithChildren: FolderData = { 
-      ...req.ogFolder!,
-      folders: [],
-      files: []
-    };
+    try {
+      let folderWithChildren: FolderData = { 
+        ...req.ogFolder!,
+        folders: [],
+        files: []
+      };
 
-    let foldersSearchFunction;
-    let filesSearchFunction;
-    
-    if (req.body.folderData.uuid === 'trash') {
-      foldersSearchFunction = () => folderServices.getRemovedFolders(req.ogDrive!);
-      filesSearchFunction = () => fileServices.getRemovedFiles(req.ogDrive!);
-    } else {
-      foldersSearchFunction = () => folderServices.getFoldersByParent(req.ogFolder!, req.ogDrive!);
-      filesSearchFunction = () => fileServices.getFilesByParent(req.ogFolder!, req.ogDrive!);
-    }
+      let foldersSearchFunction;
+      let filesSearchFunction;
+      
+      if (req.body.folderData.uuid === 'trash') {
+        foldersSearchFunction = () => folderServices.getRemovedFolders(req.ogDrive!);
+        filesSearchFunction = () => fileServices.getRemovedFiles(req.ogDrive!);
+      } else {
+        foldersSearchFunction = () => folderServices.getFoldersByParent(req.ogFolder!, req.ogDrive!);
+        filesSearchFunction = () => fileServices.getFilesByParent(req.ogFolder!, req.ogDrive!);
+      }
 
-    const getThumbnail = async (file: FileData): Promise<void> => {
-      return new Promise<void>(async (resolve, reject) => {
-        const image = await fs.promises.readFile('thumbnails/' + file.name + '.' + file.nameExtension, { encoding: 'base64' });
-        file.thumbnail = image;
-        resolve();
-      })
-    }
+      const getThumbnail = async (file: FileData): Promise<void> => {
+        return new Promise<void>(async (resolve, reject) => {
+          const image = await fs.promises.readFile('thumbnails/' + file.name + '.' + file.nameExtension, { encoding: 'base64' });
+          file.thumbnail = image;
+          resolve();
+        })
+      }
 
-    await Promise.allSettled([
-      await foldersSearchFunction()
-      .then((folders: Folder[]) => {
-        folderWithChildren.folders = folders.map(folder => ({ ...folder, type: 'folder' }))
-      })
-      .catch(() => {
-        folderWithChildren.folders = [];
-      }),
-
-      await filesSearchFunction()
-      .then(async (files: File[]) => {   
+      const assembleFiles = async (files: File[]): Promise<File[]> => {
         await Promise.allSettled(
-          files.map(async (file: FileData) => {
+          files.map(async (file: File) => {
             const extension = path.parse(file.name!).ext.substring(1);
+            
             if (['png', 'webp', 'jpg', 'jpeg'].includes(extension)) {
               return await getThumbnail(file);
             } else {
-              return file;
+              return;
             }         
           })
         )
-        folderWithChildren.files = files.map(file => ({ ...file, type: 'file' }))
-      })
-      .catch(() => {
-        folderWithChildren.files = [];
-      })
-    ])
-    .then(async () => {
+        return files.map(file => ({ ...file, type: 'file' }))
+      }
+
+      const assembleFolders = async (folders: Folder[]): Promise<Folder[]> => {
+        return folders.map(folder => ({ ...folder, type: 'folder' }))
+      }
+
+      await Promise.allSettled([
+        await foldersSearchFunction()
+        .then(async (folders: Folder[]) => {
+          folderWithChildren.folders = await assembleFolders(folders);
+        })
+        .catch(() => {
+          folderWithChildren.folders = [];
+        }),
+
+        await filesSearchFunction()
+        .then(async (files: File[]) => {   
+          folderWithChildren.files = await assembleFiles(files)
+        })
+        .catch(() => {
+          folderWithChildren.files = [];
+        })
+      ])
+
       const recalculatedSize = folderWithChildren.folders!.length + folderWithChildren.files!.length;
 
-      if (folderWithChildren.size !== recalculatedSize) {
-        if (!['home', 'trash', '', null].includes(folderWithChildren.uuid)) {
-          await folderServices.updateFolderSize({
-            ...folderWithChildren,
-            size: folderWithChildren.folders!.length + folderWithChildren.files!.length
-          })
-        }
-        return res.send({ folderData: { ...folderWithChildren, size: recalculatedSize } });
-      } else {
-        return res.send({ folderData: folderWithChildren });
+      if ((folderWithChildren.size !== recalculatedSize) &&
+      (!['home', 'trash', '', null].includes(folderWithChildren.uuid))) {
+        await folderServices.updateFolderSize({
+          ...folderWithChildren,
+          size: folderWithChildren.folders!.length + folderWithChildren.files!.length
+        })
+
+        folderWithChildren.size = recalculatedSize;
       }
-    })
-    .catch((err: any) => {
-      console.log(err)
+      
+      return res.send({ folderData: folderWithChildren });
+
+    } catch(err: any) {
+      console.log(err);
       return res.sendStatus(500);
-    }) 
+    }
   },
 
   createFolder: async (req: Request, res: Response): Promise<any> => {
-    delete req.body.folderData.type
-    await folderServices.createFolder({
-      ...req.body.folderData,
+    try {
+      delete req.body.folderData.type;
+      delete req.body.folderData.folders;
+      delete req.body.folderData.files;
 
-      uuid: crypto.randomUUID(),
-
-      ownerUuid: req.ogUser!.uuid,
-      driveUuid: req.ogDrive!.uuid,
-      parentUuid: req.ogParentFolder!.uuid,
-
-      absolutePath: req.ogParentFolder!.absolutePath + '/' + req.body.folderData.name, 
-    })
-    .then(async (folderData: Folder) => {
+      const folderData: Folder = await folderServices.createFolder({
+        ...req.body.folderData,
+  
+        uuid: crypto.randomUUID(),
+  
+        ownerUuid: req.ogUser!.uuid,
+        driveUuid: req.ogDrive!.uuid,
+        parentUuid: req.ogParentFolder!.uuid,
+  
+        absolutePath: req.ogParentFolder!.absolutePath + '/' + req.body.folderData.name, 
+      })
+  
       await folderServices.incrementFolderSize({ uuid: req.ogParentFolder!.uuid });
+
       return res.send({ folderData });
-    }) 
-    .catch((err) => {
-      console.log(err)
+
+    } catch(err: any) {
+      console.log(err);
       return res.sendStatus(500);
-    }) 
+    }
   },
 
   renameFolder: async (req: Request, res: Response): Promise<any> => {
-    const modificationDate = Date.now();
+    try {
+      const modificationDate = Date.now();
 
-    const originalFolder: Folder = req.ogFolder!;
-    req.body.folderData.absolutePath = req.ogParentFolder!.absolutePath + '/' + req.body.folderData.name;
-    req.body.folderData.modificationDate = new Date(modificationDate); 
+      const originalFolder: Folder = req.ogFolder!;
+      req.body.folderData.absolutePath = req.ogParentFolder!.absolutePath + '/' + req.body.folderData.name;
+      req.body.folderData.modificationDate = new Date(modificationDate); 
+  
+      const getNewAbsolutePath = (childFolder: FolderData): string => {
+        return req.body.folderData.absolutePath + childFolder.absolutePath!.slice(originalFolder.absolutePath!.length, childFolder.absolutePath!.length);
+      }
 
+      const folderData: Folder = await folderServices.updateFolderNameAndPath(req.body.folderData);
 
-    const getNewAbsolutePath = (childFolder: FolderData): string => {
-      return req.body.folderData.absolutePath + childFolder.absolutePath!.slice(originalFolder.absolutePath!.length, childFolder.absolutePath!.length);
-    }
-    
-    await folderServices.updateFolderNameAndPath(req.body.folderData)
-    .then(async (folderData: Folder) => {
-      await folderServices.getFoldersByPathBeginning(originalFolder, req.ogDrive!)
-      .then(async (folders: Folder[]) => {
-        folders = folders.map(childFolder => ({ ...childFolder, absolutePath: getNewAbsolutePath(childFolder) }))
+      const folders: Folder[] = await folderServices.getFoldersByPathBeginning(originalFolder, req.ogDrive!);
 
-        await Promise.allSettled(
-          folders.map(async (folder: Folder) => {
-            return await folderServices.updateFolderNameAndPath(folder);
-          })
-        )
-        .then(() => {
-          return res.send({ folderData });
+      const updatedFolders = folders.map(childFolder => ({ ...childFolder, absolutePath: getNewAbsolutePath(childFolder) }))
+
+      await Promise.allSettled(
+        updatedFolders.map(async (folder: Folder) => {
+          return await folderServices.updateFolderNameAndPath(folder);
         })
-      })
-    })    
-    .catch((err: any) => {
-      console.log(err)
+      )
+
+      return res.send({ folderData });
+
+    } catch(err: any) {
+      console.log(err);
       return res.sendStatus(500);
-    }) 
+    }
   },
 
   moveFolder: async (req: Request, res: Response): Promise<any> => {
-    const originalFolder: Folder = req.ogFolder!;
-    req.body.folderData.absolutePath = req.ogParentFolder!.absolutePath + '/' + req.body.folderData.name;
+    try {
+      const originalFolder: Folder = req.ogFolder!;
+      req.body.folderData.absolutePath = req.ogParentFolder!.absolutePath + '/' + req.body.folderData.name;
+  
+      const getNewAbsolutePath = (childFolder: FolderData): string => {
+        return req.body.folderData.absolutePath + childFolder.absolutePath!.slice(originalFolder.absolutePath!.length, childFolder.absolutePath!.length);
+      }
 
-    const getNewAbsolutePath = (childFolder: FolderData): string => {
-      return req.body.folderData.absolutePath + childFolder.absolutePath!.slice(originalFolder.absolutePath!.length, childFolder.absolutePath!.length);
-    }
-    
-    await folderServices.updateFolderParentAndPath(req.body.folderData)
-    .then(async (folderData: Folder) => {
-      await folderServices.getFoldersByPathBeginning(req.ogFolder!, req.ogDrive!)
-      .then(async (folders: Folder[]) => {
-        folders = folders.map(childFolder => ({ ...childFolder, absolutePath: getNewAbsolutePath(childFolder) }))
+      const folderData: Folder = await folderServices.updateFolderParentAndPath(req.body.folderData)
 
-        await Promise.allSettled(
-          folders.map(async folder => {
-            return await folderServices.updateFolderParentAndPath(folder);
-          })
-        )
-        .then(async () => {
-          await folderServices.decrementFolderSize({ uuid: originalFolder.parentUuid! });
-          await folderServices.incrementFolderSize({ uuid: req.body.folderData.uuid });
-          return res.send({ folderData });
+      const folders: Folder[] = await folderServices.getFoldersByPathBeginning(req.ogFolder!, req.ogDrive!)
+
+      const updatedFolders: Folder[] = folders.map(childFolder => ({ 
+        ...childFolder, 
+        absolutePath: getNewAbsolutePath(childFolder) 
+      }));
+
+      await Promise.allSettled(
+        updatedFolders.map(async folder => {
+          return await folderServices.updateFolderParentAndPath(folder);
         })
-      })
-    })    
-    .catch((err: any) => {
-      console.log(err)
+      )
+
+      await folderServices.decrementFolderSize({ uuid: originalFolder.parentUuid! });
+
+      await folderServices.incrementFolderSize({ uuid: req.body.folderData.uuid });
+
+      return res.send({ folderData });
+
+    } catch(err: any) {
+      console.log(err);
       return res.sendStatus(500);
-    }) 
+    }
   },
 
   removeFolder: async (req: Request, res: Response): Promise<any> => {
-    await folderServices.updateFolderIsRemoved({ ...req.body.folderData, isRemoved: true })
-    .then(async (folderData: Folder) => {
-      await folderServices.decrementFolderSize({ uuid: req.body.folderData.parentUuid });
+    try {
+      const folderData: Folder = await folderServices.updateFolderIsRemoved({ ...req.body.folderData, isRemoved: true })
+
+      await folderServices.incrementFolderSize({ uuid: req.body.fileData.parentUuid });
+
       return res.send({ folderData });
-    }) 
-    .catch((err: any) => {
-      console.log(err)
+      
+    } catch(err: any) {
+      console.log(err);
       return res.sendStatus(500);
-    })
+    }
   },
 
   recoverFolder: async (req: Request, res: Response): Promise<any> => {
-    await folderServices.updateFolderIsRemoved({ ...req.body.folderData, isRemoved: false })
-    .then(async (folderData: Folder) => {
-      await folderServices.incrementFolderSize({ uuid: req.body.folderData.parentUuid });
+    try {
+      const folderData: Folder = await folderServices.updateFolderIsRemoved({ ...req.body.folderData, isRemoved: false })
+
+      await folderServices.incrementFolderSize({ uuid: req.body.fileData.parentUuid });
+
       return res.send({ folderData });
-    }) 
-    .catch((err: any) => {
-      console.log(err)
+      
+    } catch(err: any) {
+      console.log(err);
       return res.sendStatus(500);
-    })
+    }
   },
 
   deleteFolder: async (req: Request, res: Response): Promise<any> => {
-    let foldersToDeleteUuids: string[] = [req.ogFolder!.uuid];
+    const findChildFoldersUuids = async (parentFolder: Folder): Promise<Array<string>> => {
+      return new Promise<Array<string>>(async function(resolve, reject) {
+        try {
+          const folders: Folder[] = await folderServices.getFoldersByParent(parentFolder, req.body.driveData)
 
-    const findChildren = async (parentFolder: Folder): Promise<void> => {
-      return new Promise<void>(async function(resolve, reject) {
-        await folderServices.getFoldersByParent(parentFolder, req.body.driveData)
-        .then(async (folders: Folder[]) => {
+          let childrenUuids2DArray: Array<Array<string>> = Array(folders.length)
+
           if (folders.length > 0) {
             await Promise.allSettled(
-              folders.map(async folder => {
-                await findChildren(folder);
+              folders.map(async (folder, index) => {
+                const childrenUuids = await findChildFoldersUuids(folder);
+                childrenUuids2DArray[index] = childrenUuids;
+                return;
               })
             )
           }
-          foldersToDeleteUuids = [...foldersToDeleteUuids, ...folders.map(childFolder => childFolder.uuid)];       
-          resolve();
-        })
-        .catch((err: any) => {
-          console.log(err);
-          resolve();
-        })
-      })
-    }
 
-    const deleteFiles = async (): Promise<void> => {
-      return new Promise<void>(async function(resolve, reject) {
-        await fileServices.getFilesByParentUuids(foldersToDeleteUuids)
-        .then(async (files: File[]) => {
-          await fileServices.deleteFilesByParentUuids(foldersToDeleteUuids)
-          .then(async () => {
-            await Promise.allSettled(
-              files.map(async (file: File) => {
-                return await diskServices.deleteFileOnDisk(file);
-              })
-            )
-            resolve(); 
-          })
-        })
-        .catch((err: any) => {
+          const childrenUuidsArray = childrenUuids2DArray.flat();
+
+          resolve(childrenUuidsArray!);
+
+        } catch (err: any) {
           reject(err);
-        })
+        }
       })
     }
 
-    await findChildren(req.ogFolder!)
-    .then(async () => {
+    const deleteFiles = async (foldersToDeleteUuids: (string)[]): Promise<void> => {
+      return new Promise<void>(async function(resolve, reject) {
+        try {
+          const files: File[] = await fileServices.getFilesByParentUuids(foldersToDeleteUuids)
+
+          await fileServices.deleteFilesByParentUuids(foldersToDeleteUuids)
+
+          await Promise.allSettled(
+            files.map(async (file: File) => {
+              return await diskServices.deleteFileOnDisk(file);
+            })
+          )
+
+          resolve(); 
+
+        } catch (err: any) {
+          reject(err);
+        }
+      })
+    }
+
+    try {
+      const foldersToDeleteUuids: string[] = [
+        req.ogFolder!.uuid,
+        ...await findChildFoldersUuids(req.ogFolder!)
+      ];
+
       await Promise.allSettled([
         await bookmarkServices.deleteBookmarksByFoldersUuids(req.ogUser!, foldersToDeleteUuids),
         await folderServices.deleteFoldersByFoldersUuids(foldersToDeleteUuids),
-        await deleteFiles()
+        await deleteFiles(foldersToDeleteUuids)
       ])
-      .then(() => {
-        return res.send({ folderData: req.ogFolder });
-      })
-    })
-    .catch((err: any) => {
+
+      return res.send({ folderData: req.ogFolder });
+
+    } catch(err: any) {
       console.log(err);
       return res.sendStatus(500);
-    })
+    }
   }
 }
+
 
 export default folderController;
