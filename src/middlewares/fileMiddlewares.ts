@@ -61,26 +61,27 @@ const fileMiddlewares = {
 
   checkIfNameIsUsed: async (req: Request, res: Response, next: NextFunction): Promise<any> => { 
     // Check whether the handled file name is already used,
-    await fileServices.checkIfNameIsAlreadyUsed(req.body.fileData)
-    .then((isUsed: boolean) => {
+    try {
+      const isUsed = await fileServices.checkIfNameIsAlreadyUsed(req.body.fileData)
+
       if (isUsed) {
         return res.sendStatus(409);
       } else {
         next();
       }
-    })
-    .catch(err => {
+    } catch(err: any) {
       console.log(err);
       return res.sendStatus(500);
-    })
+    }
   },
 
   checkIfNameIsUsedPostUpload: async (req: Request, res: Response, next: NextFunction): Promise<any> => { 
     /* Check whether the handled file name is already used, and if it is, 
     delete the previously uploaded file and generated thumbnail from the disk.
     It is only used on file upload, when the request body needs to be assembled after file upload */
-    await fileServices.checkIfNameIsAlreadyUsed(req.body.fileData)
-    .then((isUsed: boolean) => {
+    try {
+      const isUsed = await fileServices.checkIfNameIsAlreadyUsed(req.body.fileData)
+
       if (isUsed) {
         fs.unlink(req.file!.path!, async (err) => {
           if (err) {
@@ -96,57 +97,56 @@ const fileMiddlewares = {
       } else {
         next();
       }
-    })
-    .catch(err => {
+    } catch(err: any) {
       console.log(err);
       return res.sendStatus(500);
-    })
+    }
   },
 
 
   checkFile: async (req: Request, res: Response, next: NextFunction): Promise<any> => { 
     // Check whether the handled file exists
-    if (req.body.fileData) {
-      await fileServices.getFile(req.body.fileData)
-      .then((file: (File | null)) => {
+    try {
+      if (req.body.fileData) {
+        const file: File | null = await fileServices.getFile(req.body.fileData)
+
         if (file) {
           req.ogFile = file;
           next();
         } else {
           return res.sendStatus(404);
         }
-      })
-      .catch(err => {
-        console.log(err);
-        return res.sendStatus(500);
-      })
-    } else {
-      return res.sendStatus(400);
+      } else {
+        return res.sendStatus(400);
+      }
+    } catch(err: any) {
+      console.log(err);
+      return res.sendStatus(500);
     }
   },
 
   checkParentFolder: async (req: Request, res: Response, next: NextFunction): Promise<any> => { 
     // Check whether the parentUuid of the handled folder is valid
-    if (req.body.fileData.parentUuid == 'home') {
-      req.ogParentFolder = { uuid: req.body.fileData.parentUuid, absolutePath: '/home'}
-      next();
-    } else if (req.body.fileData.parentUuid == 'trash') {
-      req.ogParentFolder = { uuid: req.body.fileData.parentUuid, absolutePath: '/trash'}
-      next();
-    } else if (req.body.fileData.parentUuid ) {
-      await folderServices.getParentFolder(req.body.fileData)
-      .then((folder: (Folder | null)) => {
+    try {
+      if (req.body.fileData.parentUuid == 'home') {
+        req.ogParentFolder = { uuid: req.body.fileData.parentUuid, absolutePath: '/home'}
+        next();
+      } else if (req.body.fileData.parentUuid == 'trash') {
+        req.ogParentFolder = { uuid: req.body.fileData.parentUuid, absolutePath: '/trash'}
+        next();
+      } else if (req.body.fileData.parentUuid ) {
+        const folder: Folder | null = await folderServices.getParentFolder(req.body.fileData)
+        
         if (folder) {
           req.ogParentFolder = folder;
           next();
         } else {
           return res.sendStatus(400);
         }
-      })
-      .catch(err => {
-        console.log(err);
-        return res.sendStatus(500);
-      })
+      }
+    } catch(err: any) {
+      console.log(err);
+      return res.sendStatus(500);
     }
   }
 }

@@ -7,9 +7,11 @@ import driveServices from '@/services/driveServices';
 
 const driveMiddlewares = {
   checkDrive: async (req: Request, res: Response, next: NextFunction): Promise<any> => { 
-    if (req.body.driveData) {
-      driveServices.getDrive(req.body.driveData)
-      .then((drive: (Drive | null)) => {
+    
+    try {
+      if (req.body.driveData) {
+        const drive : Drive | null = await driveServices.getDrive(req.body.driveData)
+
         if (drive) {
           if (drive.ownerUuid === req.ogUser!.uuid) {
             req.ogDrive = drive;
@@ -20,13 +22,12 @@ const driveMiddlewares = {
         } else {
           return res.sendStatus(404);
         }
-      })
-      .catch(err => {
-        console.log(err);
+      } else {
         return res.sendStatus(400);
-      })
-    } else {
-      return res.sendStatus(400);
+      }
+    } catch(err: any) {
+      console.log(err);
+      return res.sendStatus(500);
     }
   },
   
