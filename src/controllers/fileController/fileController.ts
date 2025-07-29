@@ -8,6 +8,7 @@ import driveServices from '@/services/driveServices';
 import fileServices from '@/services/fileServices';
 import folderServices from '@/services/folderServices';
 import diskServices from '@/services/diskServices';
+import commonUtils from '@/utils/commonUtils';
 
 
 const fileController = {
@@ -58,7 +59,9 @@ const fileController = {
 
       await driveServices.updateDriveUsedSpace(req.ogDrive!, req.file!.size)
 
-      await folderServices.incrementFolderSize({ uuid: req.body.fileData.parentUuid })
+      if (commonUtils.checkIfFolderIsEditable({ uuid: req.body.fileData.parentUuid })) {
+        await folderServices.incrementFolderSize({ uuid: req.body.fileData.parentUuid })
+      }
 
       return res.send({ fileData });
 
@@ -91,7 +94,9 @@ const fileController = {
   
       await driveServices.updateDriveUsedSpace(req.ogDrive!, originalFile!.size)
 
-      await folderServices.incrementFolderSize({ uuid: req.body.fileData.parentUuid });
+      if (commonUtils.checkIfFolderIsEditable({ uuid: req.body.fileData.parentUuid })) {
+        await folderServices.incrementFolderSize({ uuid: req.body.fileData.parentUuid });
+      }
 
       return res.send({ fileData });
 
@@ -129,9 +134,13 @@ const fileController = {
 
       const fileData: File = await fileServices.updateFileParent(req.body.fileData)
 
-      await folderServices.decrementFolderSize({ uuid: originalFile!.parentUuid! });
-
-      await folderServices.incrementFolderSize({ uuid: req.body.fileData.parentUuid });
+      if (commonUtils.checkIfFolderIsEditable({ uuid: originalFile!.parentUuid! })) {
+        await folderServices.decrementFolderSize({ uuid: originalFile!.parentUuid! });
+      }
+      
+      if (commonUtils.checkIfFolderIsEditable({ uuid: req.body.fileData.parentUuid })) {
+        await folderServices.incrementFolderSize({ uuid: req.body.fileData.parentUuid });
+      }
 
       return res.send({ fileData });
 
@@ -145,8 +154,10 @@ const fileController = {
     try {
       const fileData: File = await fileServices.updateFileIsRemoved({ ...req.body.fileData, isRemoved: true })
 
-      await folderServices.decrementFolderSize({ uuid: req.body.fileData.parentUuid });
-
+      if (commonUtils.checkIfFolderIsEditable({ uuid: req.body.fileData.parentUuid })) {
+        await folderServices.decrementFolderSize({ uuid: req.body.fileData.parentUuid });
+      }
+      
       return res.send({ fileData });
       
     } catch(err: any) {
@@ -159,8 +170,10 @@ const fileController = {
     try {
       const fileData: File = await fileServices.updateFileIsRemoved({ ...req.body.fileData, isRemoved: false })
 
-      await folderServices.incrementFolderSize({ uuid: req.body.fileData.parentUuid });
-
+      if (commonUtils.checkIfFolderIsEditable({ uuid: req.body.fileData.parentUuid })) {
+        await folderServices.incrementFolderSize({ uuid: req.body.fileData.parentUuid });
+      }
+      
       return res.send({ fileData });
       
     } catch(err: any) {

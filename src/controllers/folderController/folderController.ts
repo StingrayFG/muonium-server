@@ -11,7 +11,7 @@ import fileServices from '@/services/fileServices';
 import folderServices from '@/services/folderServices';
 import bookmarkServices from '@/services/bookmarkServices';
 import diskServices from '@/services/diskServices';
-
+import commonUtils from '@/utils/commonUtils';
 
 
 const folderController = {
@@ -82,8 +82,8 @@ const folderController = {
 
       const recalculatedSize = folderWithChildren.folders!.length + folderWithChildren.files!.length;
 
-      if ((folderWithChildren.size !== recalculatedSize) &&
-      (!['home', 'trash', '', null].includes(folderWithChildren.uuid))) {
+      if (commonUtils.checkIfFolderIsEditable(folderWithChildren) && 
+      (folderWithChildren.size !== recalculatedSize)) {
         await folderServices.updateFolderSize({
           ...folderWithChildren,
           size: folderWithChildren.folders!.length + folderWithChildren.files!.length
@@ -117,8 +117,10 @@ const folderController = {
   
         absolutePath: req.ogParentFolder!.absolutePath + '/' + req.body.folderData.name, 
       })
-  
-      await folderServices.incrementFolderSize({ uuid: req.ogParentFolder!.uuid });
+      
+      if (commonUtils.checkIfFolderIsEditable({ uuid: req.ogParentFolder!.uuid })) {
+        await folderServices.incrementFolderSize({ uuid: req.ogParentFolder!.uuid });
+      }
 
       return res.send({ folderData });
 
@@ -184,10 +186,14 @@ const folderController = {
         })
       )
 
-      await folderServices.decrementFolderSize({ uuid: originalFolder.parentUuid! });
-
-      await folderServices.incrementFolderSize({ uuid: req.body.folderData.uuid });
-
+      if (commonUtils.checkIfFolderIsEditable({ uuid: originalFolder.parentUuid! })) {
+        await folderServices.decrementFolderSize({ uuid: originalFolder.parentUuid! });
+      }
+      
+      if (commonUtils.checkIfFolderIsEditable({ uuid: req.body.folderData.uuid })) {
+        await folderServices.incrementFolderSize({ uuid: req.body.folderData.uuid });
+      }
+      
       return res.send({ folderData });
 
     } catch(err: any) {
@@ -200,8 +206,10 @@ const folderController = {
     try {
       const folderData: Folder = await folderServices.updateFolderIsRemoved({ ...req.body.folderData, isRemoved: true })
 
-      await folderServices.incrementFolderSize({ uuid: req.body.fileData.parentUuid });
-
+      if (commonUtils.checkIfFolderIsEditable({ uuid: req.body.fileData.parentUuid })) {
+        await folderServices.incrementFolderSize({ uuid: req.body.fileData.parentUuid });
+      }
+      
       return res.send({ folderData });
       
     } catch(err: any) {
@@ -214,7 +222,9 @@ const folderController = {
     try {
       const folderData: Folder = await folderServices.updateFolderIsRemoved({ ...req.body.folderData, isRemoved: false })
 
-      await folderServices.incrementFolderSize({ uuid: req.body.fileData.parentUuid });
+      if (commonUtils.checkIfFolderIsEditable({ uuid: req.body.fileData.parentUuid })) {
+        await folderServices.incrementFolderSize({ uuid: req.body.fileData.parentUuid });
+      }
 
       return res.send({ folderData });
       
