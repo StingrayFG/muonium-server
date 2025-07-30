@@ -4,6 +4,8 @@ import path from 'path';
 import { File } from '@prisma/client';
 import { FileData } from '@/types/FileData';
 
+import extensions from '@/extensions.json';
+
 
 const diskServices = {
   copyFileOnDisk: async (originalFile: (File | FileData), newFile: (File | FileData)): Promise<void> => {
@@ -46,9 +48,9 @@ const diskServices = {
       }
 
       try {
-        const fileExtension = path.parse(originalFile.name!).ext.substring(1)
+        const ext = path.parse(originalFile.name!).ext.substring(1).toLowerCase();
 
-        if (['png', 'webp', 'jpg', 'jpeg'].includes(fileExtension)) {
+        if (extensions.image.includes(ext)) {
           await moveFileWithThumbnail();
         } else {
           await moveFile();
@@ -102,9 +104,9 @@ const diskServices = {
       }
 
       try {
-        const fileExtension = path.parse(file.name!).ext.substring(1)
+        const ext = path.parse(file.name!).ext.substring(1).toLowerCase();
 
-        if (['png', 'webp', 'jpg', 'jpeg'].includes(fileExtension)) {
+        if (extensions.image.includes(ext)) {
           await deleteFileWithThumbnail();
         } else {
           await deleteFile();

@@ -8,12 +8,15 @@ import { File, Folder } from '@prisma/client';
 import fileServices from '@/services/fileServices';
 import folderServices from '@/services/folderServices';
 
+import extensions from '@/extensions.json';
+
 
 const fileMiddlewares = {
   generateThumbnail: async (req: Request, res: Response, next: NextFunction): Promise<any> => { 
     // Generate a low resolution version of the uploaded file, the save it in the thumbnails folder
-    const extension = path.parse(req.file!.originalname!).ext.substring(1);
-    if (['png', 'webp', 'jpg', 'jpeg'].includes(extension)) {
+    const ext = path.parse(req.file!.originalname!).ext.substring(1).toLowerCase();
+
+    if (extensions.image.includes(ext)) {
       const image = sharp(req.file!.path);
       image.metadata() 
       .then((metadata: any) => {

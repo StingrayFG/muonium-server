@@ -13,6 +13,8 @@ import bookmarkServices from '@/services/bookmarkServices';
 import diskServices from '@/services/diskServices';
 import commonUtils from '@/utils/commonUtils';
 
+import extensions from '@/extensions.json';
+
 
 const folderController = {
 
@@ -46,9 +48,9 @@ const folderController = {
       const assembleFiles = async (files: File[]): Promise<File[]> => {
         await Promise.allSettled(
           files.map(async (file: File) => {
-            const extension = path.parse(file.name!).ext.substring(1);
+            const ext = path.parse(file.name!).ext.substring(1).toLowerCase();
             
-            if (['png', 'webp', 'jpg', 'jpeg'].includes(extension)) {
+            if (extensions.image.includes(ext)) {
               return await getThumbnail(file);
             } else {
               return;

@@ -1,0 +1,8 @@
+{
+  "text": ["txt", "cfg", "log", "conf"],
+  "audio": ["mp3", "wav", "flac"],
+  "image": ["png", "jpg", "jpeg", "webp", "gif"],
+  "video": ["mp4", "webm", "avi", "mkv"],
+  "archive": ["zip", "7z", "rar", "gz"],
+  "app": ["x86_64", "sh", "AppImage", "exe"]
+}
