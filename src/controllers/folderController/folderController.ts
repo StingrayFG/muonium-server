@@ -39,9 +39,16 @@ const folderController = {
 
       const getThumbnail = async (file: FileData): Promise<void> => {
         return new Promise<void>(async (resolve, reject) => {
-          const image = await fs.promises.readFile('thumbnails/' + file.name + '.' + file.nameExtension, { encoding: 'base64' });
-          file.thumbnail = image;
-          resolve();
+          try {
+            const thumbnailPath = `thumbnails/${path.parse(file.name!).name}.png.${file.nameExtension}`
+            
+            const image = await fs.promises.readFile(thumbnailPath, { encoding: 'base64' });
+            file.thumbnail = image;
+
+            resolve();
+          } catch (e) {
+            resolve();
+          }
         })
       }
 
@@ -50,7 +57,7 @@ const folderController = {
           files.map(async (file: File) => {
             const ext = path.parse(file.name!).ext.substring(1).toLowerCase();
             
-            if (extensions.image.includes(ext)) {
+            if (extensions.image.includes(ext) || extensions.video.includes(ext)) {
               return await getThumbnail(file);
             } else {
               return;

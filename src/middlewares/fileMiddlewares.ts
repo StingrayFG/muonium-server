@@ -1,12 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 import fs from 'fs'
 import path from 'path';
-import sharp from 'sharp';
 
 import { File, Folder } from '@prisma/client';
 
 import fileServices from '@/services/fileServices';
 import folderServices from '@/services/folderServices';
+import imageUtils from '@/utils/imageUtils';
+import videoUtils from '@/utils/videoUtils';
 
 import extensions from '@/extensions.json';
 
@@ -15,27 +16,24 @@ const fileMiddlewares = {
   generateThumbnail: async (req: Request, res: Response, next: NextFunction): Promise<any> => { 
     // Generate a low resolution version of the uploaded file, the save it in the thumbnails folder
     const ext = path.parse(req.file!.originalname!).ext.substring(1).toLowerCase();
+    
+    const fileNameExtension = path.parse(req.file?.filename!).ext.substring(1);
+    const fileName = req.file?.originalname!;
 
-    if (extensions.image.includes(ext)) {
-      const image = sharp(req.file!.path);
-      image.metadata() 
-      .then((metadata: any) => {
-        if ((metadata.width > 256) || (metadata.height > 256)) {
-          if (metadata.width > metadata.height) { 
-            return image.resize({ width: 256 });
-          } else {
-            return image.resize({ height: 256 });
-          }      
-        } else {
-          return image;
-        }
-      })
-      .then(resizedImage => {
-        resizedImage.toFile('thumbnails/' + req.file!.filename);
-        next();
-      })
-    } else {
+    const initialThumbnailPath = `thumbnails/${path.parse(fileName).name}.png`
+    const finalThumbnailPath = `thumbnails/${path.parse(fileName).name}.png.${fileNameExtension}`
+
+    try {
+      if (extensions.image.includes(ext)) {
+        await imageUtils.generateImageThumbnail(req.file!.path, initialThumbnailPath, finalThumbnailPath);
+      } else if (extensions.video.includes(ext)) {
+        await videoUtils.generateVideoThumbnail(req.file!.path, initialThumbnailPath, finalThumbnailPath);
+      }
       next();
+
+    } catch(err: any) {
+      console.log(err);
+      return res.sendStatus(500);
     }
   },
 
