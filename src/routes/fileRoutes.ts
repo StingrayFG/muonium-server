@@ -15,9 +15,10 @@ fileRoutes.post('/download', authMw.authenticateJWT, driveMw.checkDrive, fileMw.
 
 fileRoutes.get('/download/:uuid/:token', fileController.downloadFile);
 
-fileRoutes.post('/upload/:userUuid/:driveUuid/:parentUuid', fileMw.parseBodyPreUpload, authMw.authenticateJWT, driveMw.checkDrive, 
-driveMw.checkDriveSpace, fileMw.checkParentFolder, multer.single('file'), fileMw.generateThumbnail,
-fileMw.parseBodyPostUpload, fileController.uploadFile);
+fileRoutes.post('/upload/:userUuid/:driveUuid/:parentUuid', 
+fileMw.parseBodyPreUpload, authMw.authenticateJWT, driveMw.checkDrive, driveMw.checkDriveSpace, fileMw.checkParentFolder, 
+multer.single('file'), fileMw.generateThumbnail, fileMw.parseBodyPostUpload, fileController.uploadFile);
+
 
 fileRoutes.post('/copy', authMw.authenticateJWT, driveMw.checkDrive, fileMw.checkParentFolder, fileMw.checkFile, fileController.copyFile)
 
