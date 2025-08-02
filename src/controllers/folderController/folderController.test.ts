@@ -6,7 +6,7 @@ import folderController from './folderController';
 import driveServices from '@/services/driveServices';
 import fileServices from '@/services/fileServices';
 import folderServices from '@/services/folderServices';
-import diskServices from '@/services/diskServices';
+import diskUtils from '@/utils/diskUtils';
 import bookmarkServices from '@/services/bookmarkServices';
 
 import { Folder } from '@prisma/client';
@@ -18,7 +18,7 @@ import { Drive } from '@prisma/client';
 import { File } from '@prisma/client';
 import { FileData } from '@/types/FileData';
 
-import sampleObjects from '@/utils/sampleObjects';
+import sampleObjects from '@/testdata/sampleObjects';
 
 
 //
@@ -128,7 +128,7 @@ jest.mock('../../services/driveServices.ts', () => ({
   }
 }));
 
-jest.mock('../../services/diskServices.ts', () => ({
+jest.mock('../../services/diskUtils.ts', () => ({
   copyFileOnDisk: async (originalFile: (File | FileData), newFile: (File | FileData)): Promise<void> => {
     return new Promise<void>(async function(resolve, reject) {
       resolve();

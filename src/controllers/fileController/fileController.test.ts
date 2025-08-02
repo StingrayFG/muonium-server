@@ -6,7 +6,7 @@ import fileController from './fileController';
 import driveServices from '@/services/driveServices';
 import fileServices from '@/services/fileServices';
 import folderServices from '@/services/folderServices';
-import diskServices from '@/services/diskServices';
+import diskUtils from '@/utils/diskUtils';
 
 import { Folder } from '@prisma/client';
 import { User } from '@prisma/client';
@@ -17,7 +17,7 @@ import { Drive } from '@prisma/client';
 import { File } from '@prisma/client';
 import { FileData } from '@/types/FileData';
 
-import sampleObjects from '@/utils/sampleObjects';
+import sampleObjects from '@/testdata/sampleObjects';
 
 
 //
@@ -75,7 +75,7 @@ jest.mock('../../services/driveServices.ts', () => ({
   }
 }));
 
-jest.mock('../../services/diskServices.ts', () => ({
+jest.mock('../../services/diskUtils.ts', () => ({
   copyFileOnDisk: async (originalFile: (File | FileData), newFile: (File | FileData)): Promise<void> => {
     return new Promise<void>(async function(resolve, reject) {
       resolve();
@@ -101,7 +101,7 @@ describe('fileController', () => {
     const fileSpy = jest.spyOn(fileServices, 'createFile');
     const folderSpy = jest.spyOn(folderServices, 'incrementFolderSize');
     const driveSpy = jest.spyOn(driveServices, 'updateDriveUsedSpace');
-    const diskSpy = jest.spyOn(diskServices, 'copyFileOnDisk');
+    const diskSpy = jest.spyOn(diskUtils, 'copyFileOnDisk');
 
     await fileController.copyFile(
       {
@@ -143,8 +143,8 @@ describe('fileController', () => {
     }
 
     const fileSpy = jest.spyOn(fileServices, 'updateFileName');
-    const diskSpy1 = jest.spyOn(diskServices, 'copyFileOnDisk');
-    const diskSpy2 = jest.spyOn(diskServices, 'deleteFileOnDisk');
+    const diskSpy1 = jest.spyOn(diskUtils, 'copyFileOnDisk');
+    const diskSpy2 = jest.spyOn(diskUtils, 'deleteFileOnDisk');
 
     await fileController.renameFile(
       {
@@ -292,7 +292,7 @@ describe('fileController', () => {
 
     const fileSpy = jest.spyOn(fileServices, 'deleteFile');
     const driveSpy = jest.spyOn(driveServices, 'updateDriveUsedSpace');
-    const diskSpy = jest.spyOn(diskServices, 'deleteFileOnDisk');
+    const diskSpy = jest.spyOn(diskUtils, 'deleteFileOnDisk');
 
     await fileController.deleteFile(
       {

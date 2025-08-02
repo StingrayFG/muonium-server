@@ -7,7 +7,7 @@ import { File } from '@prisma/client';
 import driveServices from '@/services/driveServices';
 import fileServices from '@/services/fileServices';
 import folderServices from '@/services/folderServices';
-import diskServices from '@/services/diskServices';
+import diskUtils from '@/utils/diskUtils';
 import commonUtils from '@/utils/commonUtils';
 
 
@@ -88,7 +88,7 @@ const fileController = {
         delete req.body.fileData.type;  
       }
 
-      await diskServices.copyFileOnDisk(originalFile!, req.body.fileData)
+      await diskUtils.copyFileOnDisk(originalFile!, req.body.fileData)
 
       const fileData: File = await fileServices.createFile(req.body.fileData) 
   
@@ -114,11 +114,11 @@ const fileController = {
       req.body.fileData.nameExtension = modificationDate + '';
       req.body.fileData.modificationDate = new Date(modificationDate);
 
-      await diskServices.copyFileOnDisk(originalFile!, req.body.fileData)
+      await diskUtils.copyFileOnDisk(originalFile!, req.body.fileData)
 
       const fileData: File = await fileServices.updateFileName(req.body.fileData)
 
-      await diskServices.deleteFileOnDisk(originalFile!)
+      await diskUtils.deleteFileOnDisk(originalFile!)
 
       return res.send({ fileData });
 
@@ -188,7 +188,7 @@ const fileController = {
 
       await driveServices.updateDriveUsedSpace(req.ogDrive!, -req.ogFile!.size) 
 
-      await diskServices.deleteFileOnDisk(req.ogFile!)
+      await diskUtils.deleteFileOnDisk(req.ogFile!)
 
       return res.send({ fileData });
       

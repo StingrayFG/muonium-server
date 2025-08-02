@@ -10,7 +10,7 @@ import { FileData } from '@/types/FileData';
 import fileServices from '@/services/fileServices';
 import folderServices from '@/services/folderServices';
 import bookmarkServices from '@/services/bookmarkServices';
-import diskServices from '@/services/diskServices';
+import diskUtils from '@/utils/diskUtils';
 import commonUtils from '@/utils/commonUtils';
 
 import extensions from '@/extensions.json';
@@ -280,7 +280,7 @@ const folderController = {
 
           await Promise.allSettled(
             files.map(async (file: File) => {
-              return await diskServices.deleteFileOnDisk(file);
+              return await diskUtils.deleteFileOnDisk(file);
             })
           )
 
