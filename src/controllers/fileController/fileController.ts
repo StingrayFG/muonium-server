@@ -1,14 +1,19 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import path from 'path';
 
 import { File } from '@prisma/client';
+import { FileData } from '@/types/FileData';
 
 import driveServices from '@/services/driveServices';
 import fileServices from '@/services/fileServices';
 import folderServices from '@/services/folderServices';
 import diskUtils from '@/utils/diskUtils';
 import commonUtils from '@/utils/commonUtils';
+import fileUtils from '@/utils/fileUtils';
+
+import extensions from '@/extensions.json';
 
 
 const fileController = {
@@ -47,7 +52,7 @@ const fileController = {
 
   uploadFile: async (req: Request, res: Response): Promise<any> => {
     try {
-      const fileData: File = await fileServices.createFile({
+      const file: File = await fileServices.createFile({
         ...req.body.fileData,
   
         uuid: crypto.randomUUID(),
@@ -62,6 +67,19 @@ const fileController = {
       if (commonUtils.checkIfFolderIsEditable({ uuid: req.body.fileData.parentUuid })) {
         await folderServices.incrementFolderSize({ uuid: req.body.fileData.parentUuid })
       }
+
+      const fileData: FileData = {
+        ...file,
+        type: 'file'
+      }
+
+      try {
+        const ext = path.parse(file.name!).ext.substring(1).toLowerCase();
+
+        if (extensions.image.includes(ext) || extensions.video.includes(ext)) {
+          fileData.thumbnail = await fileUtils.getThumbnail(file);
+        } 
+      } catch (err: any) {}
 
       return res.send({ fileData });
 

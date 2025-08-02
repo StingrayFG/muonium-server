@@ -12,6 +12,7 @@ import folderServices from '@/services/folderServices';
 import bookmarkServices from '@/services/bookmarkServices';
 import diskUtils from '@/utils/diskUtils';
 import commonUtils from '@/utils/commonUtils';
+import fileUtils from '@/utils/fileUtils';
 
 import extensions from '@/extensions.json';
 
@@ -37,43 +38,28 @@ const folderController = {
         filesSearchFunction = () => fileServices.getFilesByParent(req.ogFolder!, req.ogDrive!);
       }
 
-      const getThumbnail = async (file: FileData): Promise<void> => {
-        return new Promise<void>(async (resolve, reject) => {
-          try {
-            const thumbnailPath = `thumbnails/${path.parse(file.name!).name}.png.${file.nameExtension}`
-            
-            const image = await fs.promises.readFile(thumbnailPath, { encoding: 'base64' });
-            file.thumbnail = image;
-
-            resolve();
-          } catch (e) {
-            resolve();
-          }
-        })
-      }
-
-      const assembleFiles = async (files: File[]): Promise<File[]> => {
+      const assembleFiles = async (files: FileData[]): Promise<FileData[]> => {
         await Promise.allSettled(
-          files.map(async (file: File) => {
+          files.map(async (file: FileData) => {
             const ext = path.parse(file.name!).ext.substring(1).toLowerCase();
             
             if (extensions.image.includes(ext) || extensions.video.includes(ext)) {
-              return await getThumbnail(file);
-            } else {
+              file.thumbnail = await fileUtils.getThumbnail(file);
               return;
-            }         
+            } 
+            return;    
           })
         )
         return files.map(file => ({ ...file, type: 'file' }))
       }
 
-      const assembleFolders = async (folders: Folder[]): Promise<Folder[]> => {
+      const assembleFolders = async (folders: FolderData[]): Promise<FolderData[]> => {
         return folders.map(folder => ({ ...folder, type: 'folder' }))
       }
 
       await Promise.allSettled([
         await foldersSearchFunction()
-        .then(async (folders: Folder[]) => {
+        .then(async (folders: FolderData[]) => {
           folderWithChildren.folders = await assembleFolders(folders);
         })
         .catch(() => {
@@ -81,7 +67,7 @@ const folderController = {
         }),
 
         await filesSearchFunction()
-        .then(async (files: File[]) => {   
+        .then(async (files: FileData[]) => {   
           folderWithChildren.files = await assembleFiles(files)
         })
         .catch(() => {

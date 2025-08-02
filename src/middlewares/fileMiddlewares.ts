@@ -6,8 +6,7 @@ import { File, Folder } from '@prisma/client';
 
 import fileServices from '@/services/fileServices';
 import folderServices from '@/services/folderServices';
-import imageUtils from '@/utils/imageUtils';
-import videoUtils from '@/utils/videoUtils';
+import fileUtils from '@/utils/fileUtils';
 
 import extensions from '@/extensions.json';
 
@@ -25,9 +24,9 @@ const fileMiddlewares = {
 
     try {
       if (extensions.image.includes(ext)) {
-        await imageUtils.generateImageThumbnail(req.file!.path, initialThumbnailPath, finalThumbnailPath);
+        await fileUtils.generateImageThumbnail(req.file!.path, initialThumbnailPath, finalThumbnailPath);
       } else if (extensions.video.includes(ext)) {
-        await videoUtils.generateVideoThumbnail(req.file!.path, initialThumbnailPath, finalThumbnailPath);
+        await fileUtils.generateVideoThumbnail(req.file!.path, initialThumbnailPath, finalThumbnailPath);
       }
       next();
 

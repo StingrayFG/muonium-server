@@ -2,11 +2,64 @@ import ffmpeg from 'ffmpeg-static';
 import { spawn } from 'child_process';
 import sharp from 'sharp';
 import fs from 'fs'
+import path from 'path';
+
+import { FileData } from '@/types/FileData';
 
 import config from '@/config.json';
+import extensions from '@/extensions.json';
 
 
-const videoUtils = {
+const fileUtils = {
+  getThumbnail: async (file: FileData): Promise<string> => {
+    return new Promise<string>(async (resolve, reject) => {
+      try {
+        const ext = path.parse(file.name!).ext.substring(1).toLowerCase();
+            
+        if (extensions.image.includes(ext) || extensions.video.includes(ext)) {
+          const thumbnailPath = `thumbnails/${path.parse(file.name!).name}.png.${file.nameExtension}`
+        
+          const image = await fs.promises.readFile(thumbnailPath, { encoding: 'base64' });
+  
+          resolve(image);
+
+        } else {
+          reject();
+        }
+      } catch (e) {
+        reject();
+      }
+    })
+  },
+  
+  generateImageThumbnail: (imageInputPath: string, initialThumbnailPath: string, finalThumbnailPath: string) => { 
+    return new Promise<void>(async function(resolve, reject) {
+      try {
+        const image = sharp(imageInputPath);
+
+        const metadata = await image.metadata();
+
+        if ((metadata.width! > config.thumbnailSize) || (metadata.height! > config.thumbnailSize)) {
+          if (metadata.width! > metadata.height!) { 
+            image.resize({ width: config.thumbnailSize });
+          } else {
+            image.resize({ height: config.thumbnailSize });
+          }      
+        }
+
+        await image.toFile(initialThumbnailPath);
+
+        await fs.promises.rename(initialThumbnailPath, finalThumbnailPath);
+
+        resolve();
+
+      } catch (err: any) {
+        console.log(err);
+        reject(err);
+      }
+    })
+  },
+
   generateVideoThumbnail: (videoInputPath: string, initialThumbnailPath: string, finalThumbnailPath: string) => { 
     return new Promise<void>(async function(resolve, reject) {
       try {
@@ -59,4 +112,4 @@ const videoUtils = {
   },
 }
 
-export default videoUtils; 
+export default fileUtils; 
