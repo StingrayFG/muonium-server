@@ -47,7 +47,7 @@ const diskUtils = {
       try {
         const ext = path.parse(originalFile.name!).ext.substring(1).toLowerCase();
 
-        if (extensions.image.includes(ext) || extensions.video.includes(ext)) {
+        if (extensions.image.includes(ext) || extensions.video.includes(ext) || extensions.audio.includes(ext)) {
           await moveFileThumbnail();
           await moveFile();
         } else {
@@ -97,7 +97,7 @@ const diskUtils = {
       try {
         const ext = path.parse(file.name!).ext.substring(1).toLowerCase();
 
-        if (extensions.image.includes(ext) || extensions.video.includes(ext)) {
+        if (extensions.image.includes(ext) || extensions.video.includes(ext) || extensions.audio.includes(ext)) {
           await deleteFile();
           await deleteFileThumbnail();
         } else {

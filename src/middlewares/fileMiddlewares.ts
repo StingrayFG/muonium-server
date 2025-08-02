@@ -27,6 +27,8 @@ const fileMiddlewares = {
         await fileUtils.generateImageThumbnail(req.file!.path, initialThumbnailPath, finalThumbnailPath);
       } else if (extensions.video.includes(ext)) {
         await fileUtils.generateVideoThumbnail(req.file!.path, initialThumbnailPath, finalThumbnailPath);
+      } else if (extensions.audio.includes(ext)) {
+        await fileUtils.generateAudioThumbnail(req.file!.path, initialThumbnailPath, finalThumbnailPath);
       }
       next();
 

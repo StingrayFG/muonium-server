@@ -41,12 +41,13 @@ const folderController = {
       const assembleFiles = async (files: FileData[]): Promise<FileData[]> => {
         await Promise.allSettled(
           files.map(async (file: FileData) => {
-            const ext = path.parse(file.name!).ext.substring(1).toLowerCase();
+            try {
+              const ext = path.parse(file.name!).ext.substring(1).toLowerCase();
             
-            if (extensions.image.includes(ext) || extensions.video.includes(ext)) {
-              file.thumbnail = await fileUtils.getThumbnail(file);
-              return;
-            } 
+              if (extensions.image.includes(ext) || extensions.video.includes(ext) || extensions.audio.includes(ext)) {
+                file.thumbnail = await fileUtils.getThumbnail(file);
+              } 
+            } catch (e) {}
             return;    
           })
         )

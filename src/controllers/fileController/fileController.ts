@@ -75,8 +75,8 @@ const fileController = {
 
       try {
         const ext = path.parse(file.name!).ext.substring(1).toLowerCase();
-
-        if (extensions.image.includes(ext) || extensions.video.includes(ext)) {
+            
+        if (extensions.image.includes(ext) || extensions.video.includes(ext) || extensions.audio.includes(ext)) {
           fileData.thumbnail = await fileUtils.getThumbnail(file);
         } 
       } catch (err: any) {}
